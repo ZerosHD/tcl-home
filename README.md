@@ -22,7 +22,7 @@ cd %USERPROFILE%\Desktop
 ```
 
 ```bat
-git clone https://github.com/never2salty/tcl-home tcl
+git clone https://github.com/ZerosHD/tcl-home tcl
 ```
 
 Jetzt liegt auf dem Desktop ein Ordner `tcl`.
