@@ -57,8 +57,12 @@ final class Config {
     }
 
     static final Choice ACCENT = new Choice("accent", "Accent color", "blue",
-            new String[] {"white", "blue", "cyan", "green", "amber", "red", "pink", "violet"},
-            new String[] {"White", "Blue", "Cyan", "Green", "Amber", "Red", "Pink", "Violet"});
+            new String[] {"white", "blue", "cyan", "teal", "green", "amber", "orange", "red", "pink", "violet"},
+            new String[] {"White", "Blue", "Cyan", "Teal", "Green", "Amber", "Orange", "Red", "Pink", "Violet"});
+    /** How the focused tile is marked: the ring alone, or the ring with a soft halo in the accent color. */
+    static final Choice FOCUS = new Choice("focus", "Fokus-Stil", "glow",
+            new String[] {"glow", "ring"},
+            new String[] {"Leuchten", "Nur Rahmen"});
     static final Choice TILES = new Choice("tiles", "Tile size", "large",
             new String[] {"small", "medium", "large"},
             new String[] {"Small", "Medium", "Large"});
@@ -116,14 +120,15 @@ final class Config {
     static final Choice SAVER = new Choice("saver", "Sperrbildschirm nach", "keep",
             new String[] {"keep", "5", "10", "15", "30", "60", "off"},
             new String[] {"TV-Einstellung", "5 Minuten", "10 Minuten", "15 Minuten", "30 Minuten", "1 Stunde", "Nie"});
-    static final Choice[] CHOICES = {ACCENT, TILES, LAYOUT, ORDER, LABELS, CLOCK, MEMORY, INPUTS, SWITCH, BACKGROUND, DIM, ROTATE, BACK, SAVER, LOCK, TILE_STYLE};
+    static final Choice[] CHOICES = {ACCENT, FOCUS, TILES, LAYOUT, ORDER, LABELS, CLOCK, MEMORY, INPUTS, SWITCH, BACKGROUND, DIM, ROTATE, BACK, SAVER, LOCK, TILE_STYLE};
 
     /** Folder of wallpapers, next to home.conf, that Background › Image file rotates through. */
     static final String WALLPAPERS = "wallpapers";
     private static final String OFFSET = "wallpaper.offset";
 
     private static final int[] ACCENTS = {
-        0xFFFFFFFF, 0xFF3D8BFF, 0xFF2BC4E8, 0xFF34C759, 0xFFFFB340, 0xFFFF5147, 0xFFFF5C9D, 0xFFA07CFF,
+        0xFFFFFFFF, 0xFF3D8BFF, 0xFF2BC4E8, 0xFF1DD1A1, 0xFF34C759, 0xFFFFB340, 0xFFFF8A3D, 0xFFFF5147,
+        0xFFFF5C9D, 0xFFA07CFF,
     };
     private static final int[] BACKGROUNDS = {0xFF000000, 0xFF141518, 0xFF0B1220, 0xFF000000, 0xFF141518, 0xFF141518};
 

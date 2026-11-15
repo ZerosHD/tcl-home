@@ -33,6 +33,10 @@ final class Tile extends View {
     private final TextPaint under = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private boolean moving;
     private final AfterglowTile afterglow;
+    private static final int HALO_STEPS = 6;
+    private final Paint halo = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final boolean glow;
+    private final float spread;
 
     Tile(Context c, Item item, String kind, CharSequence title, int cardW, int cardH,
             String labels, int accent) {
@@ -55,6 +59,11 @@ final class Tile extends View {
         ring.setStyle(Paint.Style.STROKE);
         ring.setStrokeWidth(stroke);
         ring.setColor(accent);
+        glow = "glow".equals(Config.get(c).get(Config.FOCUS));
+        spread = Ui.dp(c, 10);
+        halo.setStyle(Paint.Style.STROKE);
+        halo.setStrokeWidth(spread / HALO_STEPS + 1f);
+        halo.setColor(accent);
         dot.setColor(0xFF34C759);
         inner.setColor(Ui.TEXT);
         inner.setTypeface(Ui.MEDIUM);
@@ -98,8 +107,7 @@ final class Tile extends View {
         if (focused) {
             animate().scaleX(FOCUS_SCALE).scaleY(FOCUS_SCALE).setDuration(110).start();
         } else {
-            setScaleX(1f);
-            setScaleY(1f);
+            animate().scaleX(1f).scaleY(1f).setDuration(90).start();
         }
         invalidate();
     }
@@ -107,6 +115,7 @@ final class Tile extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         Drawable banner = item.banner, icon = item.icon;
+        if (glow && isFocused() && !moving) drawHalo(canvas);
         canvas.save();
         canvas.clipPath(clip);
         canvas.drawRect(card, fill);
@@ -142,6 +151,20 @@ final class Tile extends View {
         boolean label = banner != null && (labelAlways || labelOnFocus && isFocused());
         if (labelH > 0 && label) {
             drawLine(canvas, under, cardW / 2f, cardH + labelH - Ui.dp(getContext(), 6));
+        }
+    }
+
+    /**
+     * A soft halo in the accent color just outside the card, drawn before the card so only the
+     * part beyond its edge shows. Plain stroked outlines that fade outwards: no shadow layer and
+     * no blur, so it costs the same on every TV. Relies on the rows not clipping their children.
+     */
+    private void drawHalo(Canvas canvas) {
+        for (int i = 1; i <= HALO_STEPS; i++) {
+            float out = spread * i / HALO_STEPS;
+            float fade = 1f - (i - 1) / (float) HALO_STEPS;
+            halo.setAlpha(Math.round(110 * fade * fade));
+            canvas.drawRoundRect(-out, -out, cardW + out, cardH + out, radius + out, radius + out, halo);
         }
     }
 

@@ -22,7 +22,7 @@ cd %USERPROFILE%\Desktop
 ```
 
 ```bat
-git clone -b claude/serene-ramanujan-fj301a https://github.com/never2salty/tcl
+git clone https://github.com/never2salty/tcl-home tcl
 ```
 
 Jetzt liegt auf dem Desktop ein Ordner `tcl`.
@@ -101,6 +101,9 @@ TCL-Systemdienste. Eine App, die du doch willst, kommentierst du in der Liste mi
   (z. B. ein Browser). TCL-eigene Apps sind ausgeblendet. Unter *Optionen › Apps on home screen*
   blendest du jede App ein oder aus, auch den Play Store.
 - Halte OK auf einer Kachel zum Verschieben, Umbenennen oder Ausblenden.
+- Die markierte Kachel leuchtet in der Akzentfarbe. *Optionen › Accent color* wählt die
+  Farbe (zehn zur Auswahl), *Optionen › Fokus-Stil* schaltet zwischen *Leuchten* und
+  *Nur Rahmen* um.
 - Kein Internetzugriff, keine Werbung, keine Vorschläge.
 
 Die App wird bei jeder Änderung in `home/` von GitHub Actions gebaut und als
