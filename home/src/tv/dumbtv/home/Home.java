@@ -176,6 +176,16 @@ public final class Home extends Activity {
         void setVisible(boolean on) {
             boolean gridMode = "grid".equals(cfg.get(Config.LAYOUT));
             title.setVisibility(on ? View.VISIBLE : View.GONE);
+            // With no inputs row to tell apart, the lone "APPS" heading says nothing: it stays in
+            // place as a thin spacer (the scrolling measures from it) but shows no text.
+            boolean plain = Catalog.APPS.equals(kind) && !"on".equals(cfg.get(Config.INPUTS));
+            title.setAlpha(plain ? 0f : 1f);
+            ViewGroup.LayoutParams tp = title.getLayoutParams();
+            int th = plain ? dp(8) : WRAP;
+            if (tp != null && tp.height != th) {
+                tp.height = th;
+                title.setLayoutParams(tp);
+            }
             scroll.setVisibility(on && !gridMode ? View.VISIBLE : View.GONE);
             grid.setVisibility(on && gridMode ? View.VISIBLE : View.GONE);
         }
@@ -562,49 +572,52 @@ public final class Home extends Activity {
         column.setOrientation(LinearLayout.VERTICAL);
         column.setClipChildren(false);
         column.setClipToPadding(false);
-        column.setPadding(0, dp(40), 0, dp(32));
+        column.setPadding(0, dp(34), 0, dp(32));
         scroll.addView(column, new FrameLayout.LayoutParams(MATCH, WRAP));
 
-        // Top bar: the menu buttons on the right, above the clock.
+        // One top bar: the time with date and network beside it on the left, the menu buttons
+        // on the right. Keeping it to a single line leaves the screen to the apps.
         LinearLayout bar = new LinearLayout(this);
         bar.setClipChildren(false);
         bar.setClipToPadding(false);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(dp(46), 0, dp(56), dp(10));
-        bar.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+        bar.setPadding(dp(56), 0, dp(56), dp(24));
+        LinearLayout when = new LinearLayout(this);
+        when.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout stamp = new LinearLayout(this);
+        stamp.setGravity(Gravity.CENTER_VERTICAL);
+        clock = Ui.text(this, 42, Ui.TEXT, Ui.LIGHT);
+        stamp.addView(clock);
+        View rule = new View(this);
+        rule.setBackgroundColor(0x40FFFFFF);
+        LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(Math.max(1, dp(1)), dp(30));
+        rl.leftMargin = dp(16);
+        rl.rightMargin = dp(16);
+        stamp.addView(rule, rl);
+        LinearLayout lines = new LinearLayout(this);
+        lines.setOrientation(LinearLayout.VERTICAL);
+        date = Ui.text(this, 14, 0xE6FFFFFF, Ui.MEDIUM);
+        net = Ui.text(this, 12, Ui.MUTED, Ui.MEDIUM);
+        net.setPadding(0, dp(5), 0, 0);
+        net.setGravity(Gravity.CENTER_VERTICAL);
+        netIcon = new WifiIcon(dp(13), Ui.MUTED);
+        net.setCompoundDrawables(netIcon, null, null, null);
+        net.setCompoundDrawablePadding(dp(6));
+        lines.addView(date);
+        lines.addView(net);
+        stamp.addView(lines);
+        when.addView(stamp);
+        meter = new Meter(this);
+        meter.setVisibility(View.GONE);
+        LinearLayout.LayoutParams under = new LinearLayout.LayoutParams(WRAP, WRAP);
+        under.topMargin = dp(10);
+        when.addView(meter, under);
+        bar.addView(when, new LinearLayout.LayoutParams(0, WRAP, 1f));
         bar.addView(chip("Eingänge", v -> pickInput()));
         bar.addView(chip("WLAN", v -> openWifi()));
         bar.addView(chip("Einstellungen", v -> openSettings()));
         bar.addView(chip("Optionen", v -> startActivity(new Intent(this, Options.class))));
         column.addView(bar, new LinearLayout.LayoutParams(MATCH, WRAP));
-
-        LinearLayout head = new LinearLayout(this);
-        head.setClipChildren(false);
-        head.setClipToPadding(false);
-        head.setGravity(Gravity.TOP);
-        head.setPadding(dp(56), 0, dp(56), dp(12));
-        LinearLayout when = new LinearLayout(this);
-        when.setOrientation(LinearLayout.VERTICAL);
-        clock = Ui.text(this, 52, Ui.TEXT, Ui.LIGHT);
-        date = Ui.text(this, 15, Ui.MUTED, Ui.MEDIUM);
-        date.setPadding(dp(2), dp(8), 0, 0);
-        when.addView(clock);
-        when.addView(date);
-        net = Ui.text(this, 15, Ui.MUTED, Ui.MEDIUM);
-        net.setPadding(dp(2), dp(8), 0, 0);
-        net.setGravity(Gravity.CENTER_VERTICAL);
-        netIcon = new WifiIcon(dp(15), Ui.MUTED);
-        net.setCompoundDrawables(netIcon, null, null, null);
-        net.setCompoundDrawablePadding(dp(7));
-        when.addView(net);
-        meter = new Meter(this);
-        meter.setVisibility(View.GONE);
-        LinearLayout.LayoutParams under = new LinearLayout.LayoutParams(WRAP, WRAP);
-        under.topMargin = dp(12);
-        under.leftMargin = dp(2);
-        when.addView(meter, under);
-        head.addView(when, new LinearLayout.LayoutParams(0, WRAP, 1f));
-        column.addView(head, new LinearLayout.LayoutParams(MATCH, WRAP));
 
         apps = new Row(Catalog.APPS, "Apps", column);
         inputs = new Row(Catalog.INPUTS, "Inputs", column);
@@ -660,10 +673,10 @@ public final class Home extends Activity {
     }
 
     private TextView chip(String label, View.OnClickListener click) {
-        TextView v = Ui.text(this, 14, Ui.TEXT, Ui.MEDIUM);
+        TextView v = Ui.text(this, 13, Ui.TEXT, Ui.MEDIUM);
         v.setText(label);
         v.setGravity(Gravity.CENTER);
-        v.setPadding(dp(18), dp(9), dp(18), dp(9));
+        v.setPadding(dp(17), dp(9), dp(17), dp(9));
         v.setFocusable(true);
         v.setClickable(true);
         v.setOnClickListener(click);
@@ -673,7 +686,6 @@ public final class Home extends Activity {
         });
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(WRAP, WRAP);
         lp.leftMargin = dp(10);
-        lp.topMargin = dp(6);
         v.setLayoutParams(lp);
         chips.add(v);
         return v;
