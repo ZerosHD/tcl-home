@@ -432,7 +432,7 @@ cmd_home() {
   fi
   step "Schlichter Home-Screen (TCL Home)"
   note "App-Raster über einem Hintergrundbild, oben Eingänge, WLAN und Einstellungen."
-  note "Keine Werbung, keine Vorschläge, kein Internet. TCL-Apps sind ausgeblendet."
+  note "Keine Werbung, keine Vorschläge. TCL-Apps sind ausgeblendet."
   note "Dafür wird der Google-TV-Home-Screen deaktiviert (nicht gelöscht)."
   ask "TCL Home installieren und als Home-Screen setzen?" || return 0
   [[ -f $HOME_APK ]] || die "$HOME_APK fehlt. Neueste Version holen: git pull"

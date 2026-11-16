@@ -120,7 +120,19 @@ final class Config {
     static final Choice SAVER = new Choice("saver", "Sperrbildschirm nach", "keep",
             new String[] {"keep", "5", "10", "15", "30", "60", "off"},
             new String[] {"TV-Einstellung", "5 Minuten", "10 Minuten", "15 Minuten", "30 Minuten", "1 Stunde", "Nie"});
-    static final Choice[] CHOICES = {ACCENT, FOCUS, TILES, LAYOUT, ORDER, LABELS, CLOCK, MEMORY, INPUTS, SWITCH, BACKGROUND, DIM, ROTATE, BACK, SAVER, LOCK, TILE_STYLE};
+    /** The three lines in the lock screen's bottom right corner; {@link Feed} fetches them. */
+    static final Choice WEATHER = new Choice("weather", "Wetter", "on",
+            new String[] {"on", "off"},
+            new String[] {"Anzeigen", "Aus"});
+    /** The value is aladhan.com's number for the calculation method. */
+    static final Choice PRAYER = new Choice("prayer", "Gebetszeiten", "3",
+            new String[] {"off", "3", "13", "2", "5", "4", "12"},
+            new String[] {"Aus", "Muslim World League", "Diyanet (Türkei)", "ISNA (Nordamerika)",
+                    "Ägypten", "Umm al-Qura (Mekka)", "UOIF (Frankreich)"});
+    static final Choice FOOTBALL = new Choice("football", "Fußball-Ticker", "clubs",
+            new String[] {"off", "clubs", "all"},
+            new String[] {"Aus", "Meine Vereine", "Alle Spiele der Ligen"});
+    static final Choice[] CHOICES = {ACCENT, FOCUS, TILES, LAYOUT, ORDER, LABELS, CLOCK, MEMORY, INPUTS, SWITCH, BACKGROUND, DIM, ROTATE, BACK, SAVER, LOCK, TILE_STYLE, WEATHER, PRAYER, FOOTBALL};
 
     /** Folder of wallpapers, next to home.conf, that Background › Image file rotates through. */
     static final String WALLPAPERS = "wallpapers";

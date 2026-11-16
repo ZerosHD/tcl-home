@@ -27,6 +27,7 @@ wie du das auf andere Fernseher überträgst, etwa auf deinen Samsung.
 | Home-Screen | **TCL Home** statt Google TV | eigene App (Fork von dumbtv home), Google-TV-Launcher deaktiviert |
 | Hintergründe | eingebaute Berge, eigene Fotos oder ~700 Google-Chromecast-Backdrops | Bilder in `/sdcard/Android/media/tv.dumbtv.home/wallpapers/` |
 | Sperrbildschirm | Zurück-Taste oder Bildschirmschoner: großes Bild, Uhr, Datum, WLAN | Activity `Saver` und `DreamService` |
+| Wetter, Gebetszeiten, Fußball | unten rechts auf dem Sperrbildschirm, einstellbar unter Optionen | Klasse `Feed`: open-meteo.com, aladhan.com, openligadb.de |
 | WLAN-Anzeige | Name und Signalstärke unter dem Datum | `WifiManager`, braucht Standort-Recht |
 | Fernbedienung | Netflix, Prime Video → Apple TV, YouTube → SmartTube, TCL Channel → IPTV Smarters Pro, Zahnrad → Einstellungen, Favoriten → App nach vorne | Bedienungshilfe-Dienst filtert Tasten, Belegung in `home.conf` |
 | Backup | Einstellungen, abgeschaltete Pakete, App-Liste, Home-Screen, Bilder | `tcl backup`, `tcl wiederherstellen`, `tcl neu` |

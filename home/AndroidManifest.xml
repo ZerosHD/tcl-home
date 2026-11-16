@@ -16,7 +16,9 @@
 
     <!-- TCL build: the network line under the date (the Wi-Fi name needs location, which
          tcl.sh grants), and the screensaver delay from Options (WRITE_SETTINGS and
-         WRITE_SECURE_SETTINGS, granted by tcl.sh over adb). Still no INTERNET. -->
+         WRITE_SECURE_SETTINGS, granted by tcl.sh over adb). -->
+    <!-- Only Feed uses it: weather, prayer times and football scores on the lock screen. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />

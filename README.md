@@ -104,7 +104,8 @@ TCL-Systemdienste. Eine App, die du doch willst, kommentierst du in der Liste mi
 - Die markierte Kachel leuchtet in der Akzentfarbe. *Optionen › Accent color* wählt die
   Farbe (zehn zur Auswahl), *Optionen › Fokus-Stil* schaltet zwischen *Leuchten* und
   *Nur Rahmen* um.
-- Kein Internetzugriff, keine Werbung, keine Vorschläge.
+- Keine Werbung, keine Vorschläge, kein Konto. Ins Internet geht die App nur für den
+  Sperrbildschirm (Wetter, Gebetszeiten, Fußball), siehe unten.
 
 Die App wird bei jeder Änderung in `home/` von GitHub Actions gebaut und als
 `home/tcl-home.apk` ins Repo gelegt. `git pull` holt die neueste Version.
@@ -120,8 +121,35 @@ Die App wird bei jeder Änderung in `home/` von GitHub Actions gebaut und als
 
 Diese Funktionen brauchen ein paar Rechte, die `tcl home` setzt: Standort (nur damit
 Android den WLAN-Namen verrät), Einstellungen schreiben (Bildschirmschoner-Zeit) und
-den Bedienungshilfe-Dienst „TCL Home Tasten“ (Fernbedienung). Die App
-hat weiterhin keinen Internetzugriff.
+den Bedienungshilfe-Dienst „TCL Home Tasten“ (Fernbedienung).
+
+## Wetter, Gebetszeiten und Fußball auf dem Sperrbildschirm
+
+Unten rechts auf dem Sperrbildschirm stehen bis zu drei Dinge. Alles stellst du am TV
+unter *Optionen* ein:
+
+- **Wetter:** Temperatur und Wetterlage an deinem Ort. Zuerst *Optionen › Ort für Wetter
+  und Gebetszeiten* wählen, sonst bleibt die Zeile leer. *Optionen › Wetter* schaltet sie aus.
+- **Gebetszeiten:** Fajr, Shuruq, Dhuhr, Asr, Maghrib und Isha für heute, das nächste
+  Gebet in der Akzentfarbe. Sie werden jeden Tag neu geholt. *Optionen › Gebetszeiten*
+  wählt die Berechnungsmethode (Muslim World League, Diyanet, ...) oder *Aus*.
+- **Fußball:** Spiele deiner Vereine: läuft eins, steht dort `LIVE` mit dem Spielstand
+  (jede Minute neu), davor Tag und Anstoßzeit, danach das Ergebnis. *Optionen ›
+  Fußball-Ligen* und *Fußball-Vereine* legen fest, was erscheint. Voreingestellt sind
+  Bundesliga, 2. Bundesliga, DFB-Pokal, Champions League und LaLiga mit Bayern, Dortmund,
+  Bielefeld und Real Madrid. *Optionen › Fußball-Ticker*: *Meine Vereine*, *Alle Spiele
+  der Ligen* oder *Aus*. Es erscheinen höchstens fünf Zeilen: Spiele der nächsten vier
+  Tage und Ergebnisse der letzten 18 Stunden.
+
+Dein Ort fehlt in der Liste? In `home.conf` eine Zeile `place=Name|Breite|Länge`
+eintragen, z. B. `place=Minden|52.29|8.92`.
+
+Die Daten kommen von drei kostenlosen Diensten ohne Konto:
+[open-meteo.com](https://open-meteo.com) (Wetter), [aladhan.com](https://aladhan.com)
+(Gebetszeiten) und [openligadb.de](https://www.openligadb.de) (Fußball, von Freiwilligen
+gepflegt, der Spielstand kann ein paar Minuten nachhängen). Wetter und Gebetszeiten
+bekommen die Koordinaten des gewählten Ortes, sonst nichts. Dafür hat die App jetzt die
+Berechtigung für Internetzugriff; alles andere bleibt offline.
 
 ## Apps aktualisieren
 

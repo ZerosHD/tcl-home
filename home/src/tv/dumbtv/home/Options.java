@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.text.SpannableString;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -56,6 +57,9 @@ public final class Options extends Activity {
             cfg.nextWallpaper();
             refresh();
         }));
+        list.addView(action("Ort für Wetter und Gebetszeiten", this::pickPlace));
+        list.addView(action("Fußball-Ligen", this::pickLeagues));
+        list.addView(action("Fußball-Vereine", this::pickClubs));
         list.addView(gap());
         list.addView(action("Apps on home screen", () -> pick(Catalog.APPS)));
         list.addView(action("Inputs on home screen", () -> pick(Catalog.INPUTS)));
@@ -73,7 +77,9 @@ public final class Options extends Activity {
                 + "\nOn Fire OS 8 adb cannot reach that folder; use /sdcard/Android/media/"
                 + getPackageName() + "/ instead"
                 + "\nAdaptive wallpaper tint shows graphite until you add a wallpaper"
-                + "\nNo internet permission. No tracking, no ads, no accounts.");
+                + "\nInternet nur für den Sperrbildschirm: Wetter (open-meteo.com), Gebetszeiten"
+                + " (aladhan.com), Fußball (openligadb.de)"
+                + "\nNo tracking, no ads, no accounts.");
         list.addView(about);
 
         setContentView(scroll);
@@ -202,6 +208,85 @@ public final class Options extends Activity {
                 .setMultiChoiceItems(names, on, (d, which, checked) ->
                         Catalog.setShown(cfg, kind, items.get(which), checked))
                 .setPositiveButton("Done", null)
+                .show();
+    }
+
+    /** The town whose coordinates the weather and the prayer times are asked for. */
+    private void pickPlace() {
+        String[] names = new String[Feed.PLACES.length];
+        int current = -1;
+        String stored = cfg.get(Feed.KEY_PLACE, "");
+        for (int i = 0; i < names.length; i++) {
+            names[i] = Feed.PLACES[i].substring(0, Feed.PLACES[i].indexOf('|'));
+            if (Feed.PLACES[i].equals(stored)) current = i;
+        }
+        new AlertDialog.Builder(this, Ui.DIALOG)
+                .setTitle("Ort für Wetter und Gebetszeiten")
+                .setSingleChoiceItems(names, current, (d, which) -> {
+                    cfg.set(Feed.KEY_PLACE, Feed.PLACES[which]);
+                    d.dismiss();
+                })
+                .setNegativeButton("Abbrechen", null)
+                .show();
+    }
+
+    private void pickLeagues() {
+        List<String> chosen = Feed.leagues(cfg);
+        CharSequence[] names = new CharSequence[Feed.LEAGUES.length];
+        boolean[] on = new boolean[Feed.LEAGUES.length];
+        for (int i = 0; i < names.length; i++) {
+            names[i] = Feed.LEAGUES[i][1];
+            on[i] = chosen.contains(Feed.LEAGUES[i][0]);
+        }
+        new AlertDialog.Builder(this, Ui.DIALOG)
+                .setTitle("Fußball-Ligen")
+                .setMultiChoiceItems(names, on, (d, which, checked) -> {
+                    String id = Feed.LEAGUES[which][0];
+                    chosen.remove(id);
+                    if (checked) chosen.add(id);
+                    cfg.set(Feed.KEY_LEAGUES, chosen.isEmpty() ? Feed.NONE : TextUtils.join(",", chosen));
+                })
+                .setPositiveButton("Fertig", null)
+                .show();
+    }
+
+    /** The clubs of the chosen leagues come from the internet, so the list takes a moment. */
+    private void pickClubs() {
+        List<String> leagues = Feed.leagues(cfg);
+        if (leagues.isEmpty()) {
+            Toast.makeText(this, "Zuerst unter Fußball-Ligen eine Liga wählen.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        Toast.makeText(this, "Lade Vereine …", Toast.LENGTH_SHORT).show();
+        Feed feed = Feed.get(this);
+        new Thread(() -> {
+            List<String[]> teams = feed.teams(leagues);
+            runOnUiThread(() -> showClubs(teams));
+        }).start();
+    }
+
+    private void showClubs(List<String[]> teams) {
+        if (isFinishing() || isDestroyed()) return;
+        if (teams.isEmpty()) {
+            Toast.makeText(this, "Vereinsliste nicht geladen. Internet prüfen.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        List<String> chosen = Feed.clubs(cfg);
+        CharSequence[] names = new CharSequence[teams.size()];
+        boolean[] on = new boolean[teams.size()];
+        for (int i = 0; i < names.length; i++) {
+            names[i] = teams.get(i)[1];
+            on[i] = chosen.contains(teams.get(i)[0]);
+        }
+        new AlertDialog.Builder(this, Ui.DIALOG)
+                .setTitle("Fußball-Vereine")
+                .setMultiChoiceItems(names, on, (d, which, checked) -> {
+                    String id = teams.get(which)[0];
+                    chosen.remove(id);
+                    if (checked) chosen.add(id);
+                    cfg.set(Feed.KEY_CLUBS, chosen.isEmpty() ? Feed.NONE : TextUtils.join(",", chosen));
+                })
+                .setPositiveButton("Fertig", null)
                 .show();
     }
 

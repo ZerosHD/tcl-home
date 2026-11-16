@@ -10,7 +10,10 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.format.DateFormat;
+import android.text.style.ForegroundColorSpan;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -18,6 +21,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -33,6 +37,8 @@ final class SaverView extends FrameLayout {
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final ImageView wall;
     private final TextView clock, date, net;
+    private final TextView games, prayer, weather;
+    private boolean sideShown;
     private final WifiIcon icon;
     private Drawable shown;
     private int index = -1;
@@ -85,6 +91,104 @@ final class SaverView extends FrameLayout {
         bl.leftMargin = Ui.dp(c, 64);
         bl.bottomMargin = Ui.dp(c, 56);
         addView(box, bl);
+
+        // Bottom right: football, prayer times and the weather, each only when there is something.
+        LinearLayout side = new LinearLayout(c);
+        side.setOrientation(LinearLayout.VERTICAL);
+        side.setGravity(Gravity.END);
+        games = Ui.text(c, 16, 0xDDFFFFFF, Ui.MEDIUM);
+        games.setGravity(Gravity.END);
+        games.setLineSpacing(Ui.dp(c, 6), 1f);
+        prayer = Ui.text(c, 15, 0xBBFFFFFF, Ui.MEDIUM);
+        prayer.setGravity(Gravity.END);
+        prayer.setPadding(0, Ui.dp(c, 16), 0, 0);
+        weather = Ui.text(c, 20, 0xDDFFFFFF, Ui.MEDIUM);
+        weather.setGravity(Gravity.CENTER_VERTICAL);
+        weather.setPadding(0, Ui.dp(c, 14), 0, 0);
+        weather.setCompoundDrawables(new ThermoIcon(Ui.dp(c, 22), 0xDDFFFFFF), null, null, null);
+        weather.setCompoundDrawablePadding(Ui.dp(c, 6));
+        for (TextView v : new TextView[] {games, prayer, weather}) {
+            v.setVisibility(GONE);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+            lp.gravity = Gravity.END;
+            side.addView(v, lp);
+        }
+        LayoutParams sr = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM | Gravity.END);
+        sr.rightMargin = Ui.dp(c, 64);
+        sr.bottomMargin = Ui.dp(c, 56);
+        addView(side, sr);
+    }
+
+    /** Fills the bottom right corner from what {@link Feed} has, and lets it fetch what is due. */
+    private void side(Date now) {
+        Context c = getContext();
+        Config cfg = Config.get(c);
+        Feed feed = Feed.get(c);
+        feed.refresh(cfg);
+
+        String w = feed.weather(cfg);
+        weather.setText(w == null ? "" : w);
+        weather.setVisibility(w == null ? GONE : VISIBLE);
+
+        String[] times = feed.prayers(cfg);
+        if (times == null) {
+            prayer.setVisibility(GONE);
+        } else {
+            // The next prayer stands out; Shuruq (sunrise) is shown but is not one.
+            String clock24 = new SimpleDateFormat("HH:mm", Locale.US).format(now);
+            int next = 0;
+            for (int i = times.length - 1; i >= 0; i--) {
+                if (i != 1 && times[i].compareTo(clock24) > 0) next = i;
+            }
+            SpannableStringBuilder s = new SpannableStringBuilder();
+            for (int i = 0; i < times.length; i++) {
+                if (i > 0) s.append("     ");
+                int from = s.length();
+                s.append(Feed.PRAYER_NAMES[i]).append(" ").append(times[i]);
+                if (i == next) {
+                    s.setSpan(new ForegroundColorSpan(cfg.accent()), from, s.length(),
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+            }
+            prayer.setText(s);
+            prayer.setVisibility(VISIBLE);
+        }
+
+        List<Feed.Match> matches = feed.matches(cfg);
+        if (matches.isEmpty()) {
+            games.setVisibility(GONE);
+            return;
+        }
+        long ms = now.getTime();
+        SimpleDateFormat day = new SimpleDateFormat("EE", Locale.GERMAN);
+        SimpleDateFormat hour = new SimpleDateFormat("HH:mm", Locale.GERMAN);
+        String today = new SimpleDateFormat("yyyyMMdd", Locale.US).format(now);
+        SimpleDateFormat stamp = new SimpleDateFormat("yyyyMMdd", Locale.US);
+        SpannableStringBuilder s = new SpannableStringBuilder();
+        for (Feed.Match m : matches) {
+            if (s.length() > 0) s.append("\n");
+            Date kick = new Date(m.kickoff);
+            if (m.upcoming(ms)) {
+                String when = stamp.format(kick).equals(today) ? "Heute" : day.format(kick);
+                s.append(when).append(" ").append(hour.format(kick)).append("   ")
+                        .append(m.team1).append(" – ").append(m.team2);
+            } else {
+                if (m.live(ms)) {
+                    int from = s.length();
+                    s.append("● LIVE");
+                    s.setSpan(new ForegroundColorSpan(0xFFFF5147), from, s.length(),
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    s.append("   ");
+                }
+                s.append(m.team1).append("  ").append(String.valueOf(m.goals1)).append(":")
+                        .append(String.valueOf(m.goals2)).append("  ").append(m.team2);
+                if (m.finished) s.append("   Ende");
+            }
+        }
+        games.setText(s);
+        games.setVisibility(VISIBLE);
     }
 
     void start() {
@@ -108,6 +212,10 @@ final class SaverView extends FrameLayout {
             Net n = Net.now(c);
             net.setText(n.label);
             icon.setSignal(n.level);
+        }
+        if (now.getTime() / 1000 % 5 == 0 || !sideShown) {
+            sideShown = true;
+            side(now);
         }
     }
 
