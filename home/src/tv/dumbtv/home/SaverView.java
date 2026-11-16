@@ -101,55 +101,55 @@ final class SaverView extends FrameLayout {
         side.setGravity(Gravity.END);
 
         gamesCard = card(c, "Fußball");
-        games = Ui.text(c, 15, 0xDDFFFFFF, Ui.MEDIUM);
-        games.setLineSpacing(Ui.dp(c, 6), 1f);
+        games = Ui.text(c, 12, 0xCCFFFFFF, Ui.MEDIUM);
+        games.setLineSpacing(Ui.dp(c, 4), 1f);
         gamesCard.addView(games);
 
         prayerCard = card(c, "Gebetszeiten");
         LinearLayout columns = new LinearLayout(c);
-        prayerNames = Ui.text(c, 15, 0xDDFFFFFF, Ui.MEDIUM);
-        prayerNames.setLineSpacing(Ui.dp(c, 5), 1f);
-        prayerTimes = Ui.text(c, 15, 0xDDFFFFFF, Ui.MEDIUM);
-        prayerTimes.setLineSpacing(Ui.dp(c, 5), 1f);
+        prayerNames = Ui.text(c, 12, 0xCCFFFFFF, Ui.MEDIUM);
+        prayerNames.setLineSpacing(Ui.dp(c, 3), 1f);
+        prayerTimes = Ui.text(c, 12, 0xCCFFFFFF, Ui.MEDIUM);
+        prayerTimes.setLineSpacing(Ui.dp(c, 3), 1f);
         prayerTimes.setGravity(Gravity.END);
         columns.addView(prayerNames);
         LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(
                 LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        tl.leftMargin = Ui.dp(c, 22);
+        tl.leftMargin = Ui.dp(c, 16);
         columns.addView(prayerTimes, tl);
         prayerCard.addView(columns);
 
         weatherCard = card(c, "Wetter");
-        weatherCard.setMinimumWidth(Ui.dp(c, 168));
+        weatherCard.setMinimumWidth(Ui.dp(c, 124));
         LinearLayout top = new LinearLayout(c);
         top.setGravity(Gravity.CENTER_VERTICAL);
         sky = new WeatherIcon();
         ImageView picture = new ImageView(c);
         picture.setImageDrawable(sky);
-        top.addView(picture, new LinearLayout.LayoutParams(Ui.dp(c, 54), Ui.dp(c, 54)));
-        degrees = Ui.text(c, 40, Ui.TEXT, Ui.LIGHT);
-        degrees.setPadding(Ui.dp(c, 12), 0, 0, 0);
+        top.addView(picture, new LinearLayout.LayoutParams(Ui.dp(c, 36), Ui.dp(c, 36)));
+        degrees = Ui.text(c, 28, 0xEEFFFFFF, Ui.LIGHT);
+        degrees.setPadding(Ui.dp(c, 9), 0, 0, 0);
         top.addView(degrees);
         weatherCard.addView(top);
-        skyText = Ui.text(c, 16, Ui.TEXT, Ui.MEDIUM);
-        skyText.setPadding(0, Ui.dp(c, 8), 0, 0);
+        skyText = Ui.text(c, 12, 0xDDFFFFFF, Ui.MEDIUM);
+        skyText.setPadding(0, Ui.dp(c, 5), 0, 0);
         weatherCard.addView(skyText);
-        range = Ui.text(c, 13, 0xAAFFFFFF, Ui.MEDIUM);
-        range.setLineSpacing(Ui.dp(c, 3), 1f);
-        range.setPadding(0, Ui.dp(c, 5), 0, 0);
+        range = Ui.text(c, 10, 0x99FFFFFF, Ui.MEDIUM);
+        range.setLineSpacing(Ui.dp(c, 2), 1f);
+        range.setPadding(0, Ui.dp(c, 3), 0, 0);
         weatherCard.addView(range);
 
         LinearLayout.LayoutParams gl = new LinearLayout.LayoutParams(
                 LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
         gl.gravity = Gravity.END;
-        gl.bottomMargin = Ui.dp(c, 12);
+        gl.bottomMargin = Ui.dp(c, 8);
         side.addView(gamesCard, gl);
         LinearLayout row = new LinearLayout(c);
         row.setGravity(Gravity.BOTTOM);
         row.addView(prayerCard);
         LinearLayout.LayoutParams wl = new LinearLayout.LayoutParams(
                 LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        wl.leftMargin = Ui.dp(c, 12);
+        wl.leftMargin = Ui.dp(c, 8);
         row.addView(weatherCard, wl);
         LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(
                 LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
@@ -158,8 +158,8 @@ final class SaverView extends FrameLayout {
 
         LayoutParams sr = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM | Gravity.END);
-        sr.rightMargin = Ui.dp(c, 64);
-        sr.bottomMargin = Ui.dp(c, 56);
+        sr.rightMargin = Ui.dp(c, 32);
+        sr.bottomMargin = Ui.dp(c, 28);
         addView(side, sr);
     }
 
@@ -167,11 +167,11 @@ final class SaverView extends FrameLayout {
     private static LinearLayout card(Context c, String title) {
         LinearLayout v = new LinearLayout(c);
         v.setOrientation(LinearLayout.VERTICAL);
-        v.setBackground(Ui.round(0x80000000, Ui.dp(c, 14)));
-        v.setPadding(Ui.dp(c, 18), Ui.dp(c, 12), Ui.dp(c, 18), Ui.dp(c, 14));
-        TextView t = Ui.text(c, 11, 0x99FFFFFF, Ui.MEDIUM);
+        v.setBackground(Ui.round(0x4D000000, Ui.dp(c, 11)));
+        v.setPadding(Ui.dp(c, 13), Ui.dp(c, 9), Ui.dp(c, 13), Ui.dp(c, 10));
+        TextView t = Ui.text(c, 9, 0x80FFFFFF, Ui.MEDIUM);
         t.setLetterSpacing(0.12f);
-        t.setPadding(0, 0, 0, Ui.dp(c, 8));
+        t.setPadding(0, 0, 0, Ui.dp(c, 5));
         v.addView(t);
         heading(v, title);
         v.setVisibility(GONE);
