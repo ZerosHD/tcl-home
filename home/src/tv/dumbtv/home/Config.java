@@ -56,9 +56,9 @@ final class Config {
         }
     }
 
-    static final Choice ACCENT = new Choice("accent", "Accent color", "blue",
+    static final Choice ACCENT = new Choice("accent", "Akzentfarbe", "blue",
             new String[] {"white", "blue", "cyan", "teal", "green", "amber", "orange", "red", "pink", "violet"},
-            new String[] {"White", "Blue", "Cyan", "Teal", "Green", "Amber", "Orange", "Red", "Pink", "Violet"});
+            new String[] {"Weiß", "Blau", "Cyan", "Türkis", "Grün", "Bernstein", "Orange", "Rot", "Pink", "Violett"});
     /** How the focused tile is marked: raised with a shadow and a bright edge, the ring with a
      * soft halo in the accent color, or the ring alone. */
     static final Choice FOCUS = new Choice("focus", "Fokus-Stil", "lift",
@@ -68,51 +68,51 @@ final class Config {
     static final Choice DOCK = new Choice("dock", "Dock (erste Reihe)", "on",
             new String[] {"on", "off"},
             new String[] {"An", "Aus"});
-    static final Choice TILES = new Choice("tiles", "Tile size", "large",
+    static final Choice TILES = new Choice("tiles", "Kachelgröße", "large",
             new String[] {"small", "medium", "large"},
-            new String[] {"Small", "Medium", "Large"});
-    static final Choice LAYOUT = new Choice("layout", "Layout", "grid",
+            new String[] {"Klein", "Mittel", "Groß"});
+    static final Choice LAYOUT = new Choice("layout", "Anordnung", "grid",
             new String[] {"rows", "grid"},
-            new String[] {"Rows", "Grid"});
-    static final Choice ORDER = new Choice("order", "App order", "custom",
+            new String[] {"Reihen", "Raster"});
+    static final Choice ORDER = new Choice("order", "App-Reihenfolge", "custom",
             new String[] {"custom", "recent"},
-            new String[] {"Your order", "Recently used"});
-    static final Choice LABELS = new Choice("labels", "App names", "focus",
+            new String[] {"Eigene Reihenfolge", "Zuletzt benutzt"});
+    static final Choice LABELS = new Choice("labels", "App-Namen", "focus",
             new String[] {"focus", "always", "never"},
-            new String[] {"On focus", "Always", "Never"});
-    static final Choice CLOCK = new Choice("clock", "Clock", "auto",
+            new String[] {"Bei Fokus", "Immer", "Nie"});
+    static final Choice CLOCK = new Choice("clock", "Uhr", "auto",
             new String[] {"auto", "24h", "12h"},
-            new String[] {"System", "24-hour", "12-hour"});
+            new String[] {"Wie der TV", "24 Stunden", "12 Stunden"});
     /** Free memory under the date, for TVs that are short of it. Shows only; frees nothing. */
-    static final Choice MEMORY = new Choice("memory", "Memory meter", "off",
+    static final Choice MEMORY = new Choice("memory", "Speicher-Anzeige", "off",
             new String[] {"off", "on"},
-            new String[] {"Hidden", "Shown"});
-    static final Choice INPUTS = new Choice("inputs", "Inputs row", "off",
+            new String[] {"Aus", "An"});
+    static final Choice INPUTS = new Choice("inputs", "Eingänge-Reihe", "off",
             new String[] {"on", "off"},
-            new String[] {"Shown", "Hidden"});
-    static final Choice SWITCH = new Choice("switch", "Open inputs with", "auto",
+            new String[] {"An", "Aus"});
+    static final Choice SWITCH = new Choice("switch", "Eingänge öffnen mit", "auto",
             new String[] {"auto", "tv", "home"},
-            new String[] {"Automatic", "The TV's app", "dumbtv home"});
-    static final Choice BACKGROUND = new Choice("background", "Background", "image",
+            new String[] {"Automatisch", "App des TVs", "TCL Home"});
+    static final Choice BACKGROUND = new Choice("background", "Hintergrund", "image",
             new String[] {"black", "graphite", "midnight", "image", "adaptive", "adaptive-tint"},
-            new String[] {"Black", "Graphite", "Midnight", "Image file", "Adaptive solid", "Adaptive wallpaper tint"});
-    static final Choice DIM = new Choice("dim", "Image dim", "20",
+            new String[] {"Schwarz", "Graphit", "Mitternacht", "Bild", "Farbe der App", "Bild mit App-Farbton"});
+    static final Choice DIM = new Choice("dim", "Bild abdunkeln", "20",
             new String[] {"0", "20", "40", "60", "80"},
             new String[] {"0%", "20%", "40%", "60%", "80%"});
 
-    static final Choice ROTATE = new Choice("rotate", "Wallpaper rotation", "off",
+    static final Choice ROTATE = new Choice("rotate", "Bildwechsel", "off",
             new String[] {"off", "visit", "hourly", "daily", "daytime"},
-            new String[] {"Off", "Every return home", "Every hour", "Every day", "By time of day"});
+            new String[] {"Aus", "Bei jeder Rückkehr", "Stündlich", "Täglich", "Nach Tageszeit"});
 
     /**
      * For a TV children use: hides Options and Settings and turns off the tile menu, so the home
      * screen only opens apps and inputs. Holding Menu for {@link Home#UNLOCK_MS} opens Options.
      */
-    static final Choice LOCK = new Choice("lock", "Child lock", "off",
+    static final Choice LOCK = new Choice("lock", "Kindersicherung", "off",
             new String[] {"off", "on"},
-            new String[] {"Off", "On"});
+            new String[] {"Aus", "An"});
 
-    static final Choice TILE_STYLE = new Choice("tile_style", "App tile style", "original",
+    static final Choice TILE_STYLE = new Choice("tile_style", "Kachel-Stil", "original",
             new String[] {"original", "afterglow"}, new String[] {"Original", "Afterglow"});
     /** Back on the home screen: the lock screen, or the first tile as upstream does. */
     static final Choice BACK = new Choice("back", "Zurück-Taste", "saver",

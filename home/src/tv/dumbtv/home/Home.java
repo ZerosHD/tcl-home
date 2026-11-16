@@ -68,6 +68,8 @@ public final class Home extends Activity {
     private FrameLayout root;
     private ImageView wall;
     private View shade;
+    /** The scrolling page with the top bar and the tiles; eased in on every return home. */
+    private View content;
     /** The dim the shade was last built for; -1 for none, -2 before the first time. */
     private int shadeDim = -2;
     private View tint;
@@ -259,6 +261,14 @@ public final class Home extends Activity {
         registerReceiver(time, f);
         tick();
         openPending();
+        if (content != null) {
+            // A short rise and fade, so the home screen arrives instead of snapping in.
+            content.animate().cancel();
+            content.setAlpha(0f);
+            content.setTranslationY(dp(12));
+            content.animate().alpha(1f).translationY(0f).setDuration(280)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+        }
     }
 
     @Override
@@ -569,6 +579,7 @@ public final class Home extends Activity {
                 return super.focusSearch(focused, direction);
             }
         };
+        content = column;
         column.setOrientation(LinearLayout.VERTICAL);
         column.setClipChildren(false);
         column.setClipToPadding(false);
@@ -620,7 +631,7 @@ public final class Home extends Activity {
         column.addView(bar, new LinearLayout.LayoutParams(MATCH, WRAP));
 
         apps = new Row(Catalog.APPS, "Apps", column);
-        inputs = new Row(Catalog.INPUTS, "Inputs", column);
+        inputs = new Row(Catalog.INPUTS, "Eingänge", column);
         return root;
     }
 
@@ -1088,15 +1099,15 @@ public final class Home extends Activity {
             startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED));
             if (pkg != null) Recent.opened(this, pkg);
         } catch (ActivityNotFoundException | SecurityException e) {
-            Toast.makeText(this, "Could not open that", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Lässt sich nicht öffnen", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void menu(Tile t) {
         boolean app = Catalog.APPS.equals(t.kind);
         String[] actions = app
-                ? new String[] {"Move", "Rename", "Hide", "App info"}
-                : new String[] {"Move", "Rename", "Hide"};
+                ? new String[] {"Verschieben", "Umbenennen", "Ausblenden", "App-Info"}
+                : new String[] {"Verschieben", "Umbenennen", "Ausblenden"};
         new AlertDialog.Builder(this, Ui.DIALOG)
                 .setTitle(Catalog.label(cfg, t.item))
                 .setItems(actions, (d, which) -> {
@@ -1104,8 +1115,8 @@ public final class Home extends Activity {
                         case 0:
                             if (t.getParent() == null) break;
                             if (app && recentFor(t.kind) != null) {
-                                Toast.makeText(this, "App order is Recently used. Pick Your order "
-                                        + "in Options to move tiles.", Toast.LENGTH_LONG).show();
+                                Toast.makeText(this, "Die App-Reihenfolge ist \u201EZuletzt benutzt\u201C. Zum Verschieben in den "
+                                        + "Optionen \u201EEigene Reihenfolge\u201C wählen.", Toast.LENGTH_LONG).show();
                                 break;
                             }
                             moving = t;
@@ -1117,7 +1128,7 @@ public final class Home extends Activity {
                         case 2:
                             Catalog.setShown(cfg, t.kind, t.item, false);
                             render(app ? apps : inputs);
-                            Toast.makeText(this, "Hidden. Bring it back from Options.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Ausgeblendet. In den Optionen wieder einblenden.", Toast.LENGTH_SHORT).show();
                             break;
                         default:
                             launch(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -1137,9 +1148,9 @@ public final class Home extends Activity {
         box.addView(field);
         String key = "name." + t.item.id;
         AlertDialog d = new AlertDialog.Builder(this, Ui.DIALOG)
-                .setTitle("Rename")
+                .setTitle("Umbenennen")
                 .setView(box)
-                .setPositiveButton("Save", (dialog, w) -> {
+                .setPositiveButton("Speichern", (dialog, w) -> {
                     String name = field.getText().toString().trim();
                     cfg.set(key, name.equals(t.item.label.toString()) ? null : name);
                     apply();
@@ -1148,7 +1159,7 @@ public final class Home extends Activity {
                     cfg.set(key, null);
                     apply();
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("Abbrechen", null)
                 .create();
         d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
         d.show();

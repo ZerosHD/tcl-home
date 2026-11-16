@@ -39,7 +39,7 @@ public final class Input extends Activity {
     private static final int WRAP = ViewGroup.LayoutParams.WRAP_CONTENT;
     private static final String EXTRA_ID = "input", EXTRA_NAME = "name";
     private static final long NAME_MS = 2500, SIGNAL_MS = 6000;
-    private static final String FAILED = "Could not open input", NO_SIGNAL = "No signal";
+    private static final String FAILED = "Eingang lässt sich nicht öffnen", NO_SIGNAL = "Kein Signal";
     private static final String AMAZON_LIVE_TV = "com.amazon.tv.livetv";
 
     private final Handler ui = new Handler(Looper.getMainLooper());

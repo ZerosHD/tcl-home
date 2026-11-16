@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.media.tv.TvInputManager;
 import android.os.Bundle;
@@ -29,6 +30,8 @@ import java.util.List;
 /** Every setting is a row: left/right or OK cycles it, and the change is saved at once. */
 public final class Options extends Activity {
     private static final int WRAP = ViewGroup.LayoutParams.WRAP_CONTENT;
+    /** Width of the centered column of settings, in dp. */
+    private static final int WIDTH = 640;
 
     private final List<Runnable> refreshers = new ArrayList<>();
     private Config cfg;
@@ -41,46 +44,69 @@ public final class Options extends Activity {
         ScrollView scroll = new ScrollView(this);
         scroll.setFocusable(false);
         scroll.setVerticalScrollBarEnabled(false);
-        scroll.setBackgroundColor(0xFF0C0C0E);
+        scroll.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[] {0xFF171A20, 0xFF08090B}));
         LinearLayout list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
-        list.setPadding(dp(56), dp(40), dp(56), dp(40));
+        list.setGravity(Gravity.CENTER_HORIZONTAL);
+        list.setPadding(dp(56), dp(36), dp(56), dp(48));
         scroll.addView(list);
 
-        TextView title = Ui.text(this, 30, Ui.TEXT, Ui.LIGHT);
-        title.setText("Options");
-        title.setPadding(dp(16), 0, 0, dp(20));
-        list.addView(title);
+        TextView title = Ui.text(this, 34, Ui.TEXT, Ui.LIGHT);
+        title.setText("Optionen");
+        title.setPadding(dp(6), 0, 0, 0);
+        list.addView(title, new LinearLayout.LayoutParams(dp(WIDTH), WRAP));
 
-        for (Config.Choice c : Config.CHOICES) list.addView(choice(c));
-        list.addView(action("Next wallpaper", () -> {
+        LinearLayout look = section(list, "Aussehen");
+        for (Config.Choice c : new Config.Choice[] {Config.ACCENT, Config.FOCUS, Config.DOCK,
+                Config.TILES, Config.LAYOUT, Config.LABELS, Config.TILE_STYLE}) {
+            look.addView(choice(c));
+        }
+
+        LinearLayout wall = section(list, "Hintergrund");
+        for (Config.Choice c : new Config.Choice[] {Config.BACKGROUND, Config.DIM, Config.ROTATE}) {
+            wall.addView(choice(c));
+        }
+        wall.addView(action("Nächstes Hintergrundbild", () -> {
             cfg.nextWallpaper();
             refresh();
         }));
-        list.addView(action("Ort für Wetter und Gebetszeiten", this::pickPlace));
-        list.addView(action("Fußball-Ligen", this::pickLeagues));
-        list.addView(action("Fußball-Vereine", this::pickClubs));
-        list.addView(gap());
-        list.addView(action("Apps on home screen", () -> pick(Catalog.APPS)));
-        list.addView(action("Inputs on home screen", () -> pick(Catalog.INPUTS)));
-        list.addView(action("Reset order, names and hidden tiles", this::reset));
-        list.addView(action("Apps aktualisieren (Play Store)", this::updateApps));
-        list.addView(action("Sperrbildschirm jetzt zeigen", () -> startActivity(new Intent(this, Saver.class))));
 
-        TextView about = Ui.text(this, 13, Ui.FAINT, Ui.MEDIUM);
-        about.setLineSpacing(0, 1.4f);
-        about.setPadding(dp(16), dp(28), 0, 0);
-        about.setText("Settings file: " + cfg.dir + "/" + Config.FILE
-                + "\nOne wallpaper: name it exactly wallpaper.jpg (or .png) and put it in that folder"
-                + "\nSeveral wallpapers: put them in " + Config.WALLPAPERS + "/ with any names, and pick a rotation"
-                + "\nThen pick Background › Image file or Adaptive wallpaper tint. No permission is needed"
-                + "\nOn Fire OS 8 adb cannot reach that folder; use /sdcard/Android/media/"
-                + getPackageName() + "/ instead"
-                + "\nAdaptive wallpaper tint shows graphite until you add a wallpaper"
+        LinearLayout home = section(list, "Home-Screen");
+        for (Config.Choice c : new Config.Choice[] {Config.ORDER, Config.CLOCK, Config.MEMORY,
+                Config.INPUTS, Config.SWITCH}) {
+            home.addView(choice(c));
+        }
+        home.addView(action("Apps auf dem Home-Screen", () -> pick(Catalog.APPS)));
+        home.addView(action("Eingänge auf dem Home-Screen", () -> pick(Catalog.INPUTS)));
+        home.addView(action("Reihenfolge, Namen und Ausgeblendetes zurücksetzen", this::reset));
+
+        LinearLayout lock = section(list, "Sperrbildschirm");
+        lock.addView(choice(Config.BACK));
+        lock.addView(choice(Config.SAVER));
+        lock.addView(action("Sperrbildschirm jetzt zeigen", () -> startActivity(new Intent(this, Saver.class))));
+        lock.addView(choice(Config.WEATHER));
+        lock.addView(choice(Config.PRAYER));
+        lock.addView(action("Ort für Wetter und Gebetszeiten", this::pickPlace));
+        lock.addView(choice(Config.FOOTBALL));
+        lock.addView(action("Fußball-Ligen", this::pickLeagues));
+        lock.addView(action("Fußball-Vereine", this::pickClubs));
+
+        LinearLayout system = section(list, "System");
+        system.addView(choice(Config.LOCK));
+        system.addView(action("Apps aktualisieren (Play Store)", this::updateApps));
+
+        TextView about = Ui.text(this, 12, Ui.FAINT, Ui.MEDIUM);
+        about.setLineSpacing(0, 1.45f);
+        about.setPadding(dp(6), dp(26), dp(6), 0);
+        about.setText("Einstellungsdatei: " + cfg.dir + "/" + Config.FILE
+                + "\nEin Hintergrundbild: als wallpaper.jpg (oder .png) in diesen Ordner legen"
+                + "\nMehrere Bilder: in den Ordner " + Config.WALLPAPERS + "/ legen und einen Bildwechsel wählen"
+                + "\nDanach Hintergrund \u203A Bild oder Bild mit App-Farbton wählen"
                 + "\nInternet nur für den Sperrbildschirm: Wetter (open-meteo.com), Gebetszeiten"
                 + " (aladhan.com), Fußball (espn.com)"
-                + "\nNo tracking, no ads, no accounts.");
-        list.addView(about);
+                + "\nKein Tracking, keine Werbung, kein Konto.");
+        list.addView(about, new LinearLayout.LayoutParams(dp(WIDTH), WRAP));
 
         setContentView(scroll);
         refresh();
@@ -100,7 +126,7 @@ public final class Options extends Activity {
     private View choice(Config.Choice c) {
         LinearLayout row = row();
         TextView name = label(c.title);
-        TextView value = Ui.text(this, 16, Ui.MUTED, Ui.MEDIUM);
+        TextView value = Ui.text(this, 15, Ui.MUTED, Ui.MEDIUM);
         value.setGravity(Gravity.END);
         row.addView(name, new LinearLayout.LayoutParams(0, WRAP, 1f));
         row.addView(value, new LinearLayout.LayoutParams(WRAP, WRAP));
@@ -143,8 +169,8 @@ public final class Options extends Activity {
         refresh();
         if (c == Config.SAVER) applySaver(cfg.get(c));
         if (c == Config.LOCK && "on".equals(cfg.get(c))) {
-            Toast.makeText(this, "Options and Settings are hidden on the home screen now. "
-                    + "Hold \u2630 Menu for " + Home.UNLOCK_MS / 1000 + " seconds to come back here.",
+            Toast.makeText(this, "Optionen und Einstellungen sind jetzt auf dem Home-Screen ausgeblendet. "
+                    + "\u2630 Menü " + Home.UNLOCK_MS / 1000 + " Sekunden halten, um hierher zurückzukommen.",
                     Toast.LENGTH_LONG).show();
         }
         return true;
@@ -161,28 +187,43 @@ public final class Options extends Activity {
         return row;
     }
 
+    /** A heading and, under it, a rounded panel that the rows of one topic go into. */
+    private LinearLayout section(LinearLayout list, String name) {
+        TextView heading = Ui.text(this, 11, Ui.FAINT, Ui.MEDIUM);
+        heading.setText(name.toUpperCase(java.util.Locale.GERMAN));
+        heading.setLetterSpacing(0.14f);
+        heading.setPadding(dp(6), dp(26), 0, dp(9));
+        list.addView(heading, new LinearLayout.LayoutParams(dp(WIDTH), WRAP));
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable panel = Ui.round(0x12FFFFFF, dp(18));
+        panel.setStroke(Math.max(1, dp(0.75f)), 0x1FFFFFFF);
+        card.setBackground(panel);
+        card.setPadding(dp(6), dp(6), dp(6), dp(6));
+        list.addView(card, new LinearLayout.LayoutParams(dp(WIDTH), WRAP));
+        return card;
+    }
+
     private LinearLayout row() {
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setFocusable(true);
         row.setClickable(true);
-        row.setPadding(dp(16), dp(14), dp(16), dp(14));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(600), WRAP);
-        lp.bottomMargin = dp(4);
-        row.setLayoutParams(lp);
+        row.setPadding(dp(16), dp(13), dp(16), dp(13));
+        row.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, WRAP));
         return row;
     }
 
     private void style(View row) {
         StateListDrawable bg = new StateListDrawable();
         bg.addState(new int[] {android.R.attr.state_focused},
-                Ui.round((cfg.accent() & 0x00FFFFFF) | 0x33000000, dp(10)));
-        bg.addState(new int[0], Ui.round(0x00000000, dp(10)));
+                Ui.round((cfg.accent() & 0x00FFFFFF) | 0x40000000, dp(13)));
+        bg.addState(new int[0], Ui.round(0x00000000, dp(13)));
         row.setBackground(bg);
     }
 
     private TextView label(String text) {
-        TextView v = Ui.text(this, 16, Ui.TEXT, Ui.MEDIUM);
+        TextView v = Ui.text(this, 15, Ui.TEXT, Ui.MEDIUM);
         v.setText(text);
         return v;
     }
@@ -204,10 +245,10 @@ public final class Options extends Activity {
             on[i] = Catalog.shown(cfg, kind, items.get(i));
         }
         new AlertDialog.Builder(this, Ui.DIALOG)
-                .setTitle(Catalog.APPS.equals(kind) ? "Apps on home screen" : "Inputs on home screen")
+                .setTitle(Catalog.APPS.equals(kind) ? "Apps auf dem Home-Screen" : "Eingänge auf dem Home-Screen")
                 .setMultiChoiceItems(names, on, (d, which, checked) ->
                         Catalog.setShown(cfg, kind, items.get(which), checked))
-                .setPositiveButton("Done", null)
+                .setPositiveButton("Fertig", null)
                 .show();
     }
 
@@ -291,10 +332,10 @@ public final class Options extends Activity {
 
     private void reset() {
         new AlertDialog.Builder(this, Ui.DIALOG)
-                .setTitle("Reset the home screen layout?")
-                .setMessage("Order, names and hidden tiles go back to default. Colors and sizes stay.")
-                .setPositiveButton("Reset", (d, w) -> cfg.removePrefix("name.", "apps.", "inputs."))
-                .setNegativeButton("Cancel", null)
+                .setTitle("Home-Screen zurücksetzen?")
+                .setMessage("Reihenfolge, Namen und ausgeblendete Kacheln werden zurückgesetzt. Farben und Größen bleiben.")
+                .setPositiveButton("Zurücksetzen", (d, w) -> cfg.removePrefix("name.", "apps.", "inputs."))
+                .setNegativeButton("Abbrechen", null)
                 .show();
     }
 

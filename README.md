@@ -98,12 +98,12 @@ TCL-Systemdienste. Eine App, die du doch willst, kommentierst du in der Liste mi
 - oben rechts **Eingänge** (Liste deiner HDMI-Eingänge), **WLAN**, **Einstellungen**
   und **Optionen**
 - Apps, die du selbst installierst, erscheinen sofort, auch Handy-Apps ohne TV-Banner
-  (z. B. ein Browser). TCL-eigene Apps sind ausgeblendet. Unter *Optionen › Apps on home screen*
+  (z. B. ein Browser). TCL-eigene Apps sind ausgeblendet. Unter *Optionen › Apps auf dem Home-Screen*
   blendest du jede App ein oder aus, auch den Play Store.
 - Halte OK auf einer Kachel zum Verschieben, Umbenennen oder Ausblenden.
 - Die markierte Kachel hebt sich an: sie wird größer, bekommt einen weichen Schatten, einen
   Lichtschein und eine helle Kante. *Optionen › Fokus-Stil* bietet außerdem *Leuchten* und
-  *Nur Rahmen* in der Akzentfarbe (*Optionen › Accent color*, zehn Farben).
+  *Nur Rahmen* in der Akzentfarbe (*Optionen › Akzentfarbe*, zehn Farben).
 - Die erste Reihe liegt auf einem Dock, einer halb durchsichtigen Leiste für deine
   wichtigsten Apps. *Optionen › Dock (erste Reihe)* schaltet es aus.
 - Keine Werbung, keine Vorschläge, kein Konto. Ins Internet geht die App nur für den
@@ -210,8 +210,8 @@ weniger Bilder: `tcl hintergruende 60`.
 - **Eigene Sammlung:** Bilder in einen Ordner legen, dann `tcl hintergruende C:\Pfad\zum\Ordner`.
   Bilder, die dir nicht gefallen, löschst du aus `hintergruende\` und rufst
   `tcl hintergruende hintergruende` auf.
-- **Wechsel ändern:** am TV *Optionen › Wallpaper rotation* (jede Rückkehr, stündlich,
-  täglich, nach Tageszeit). *Optionen › Next wallpaper* springt sofort weiter.
+- **Wechsel ändern:** am TV *Optionen › Bildwechsel* (jede Rückkehr, stündlich,
+  täglich, nach Tageszeit). *Optionen › Nächstes Hintergrundbild* springt sofort weiter.
   Oder beim Laden: `set ROTATE=daily` (CMD) vor dem Befehl.
 - **Weg damit:** `tcl hintergruende aus`
 
