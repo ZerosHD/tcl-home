@@ -134,21 +134,25 @@ unter *Optionen* ein:
 - **Gebetszeiten:** eine Karte links neben dem Wetter mit Fajr, Shuruq, Dhuhr, Asr,
   Maghrib und Isha für heute untereinander, das nächste Gebet in der Akzentfarbe. Sie werden jeden Tag neu geholt. *Optionen › Gebetszeiten*
   wählt die Berechnungsmethode (Muslim World League, Diyanet, ...) oder *Aus*.
-- **Fußball:** Spiele deiner Vereine: läuft eins, steht dort `LIVE` mit dem Spielstand
-  (jede Minute neu), davor Tag und Anstoßzeit, danach das Ergebnis. *Optionen ›
-  Fußball-Ligen* und *Fußball-Vereine* legen fest, was erscheint. Voreingestellt sind
-  Bundesliga, 2. Bundesliga, DFB-Pokal, Champions League und LaLiga mit Bayern, Dortmund,
-  Bielefeld und Real Madrid. *Optionen › Fußball-Ticker*: *Meine Vereine*, *Alle Spiele
-  der Ligen* oder *Aus*. Es erscheinen höchstens fünf Zeilen: Spiele der nächsten acht
-  Tage und Ergebnisse der letzten 18 Stunden.
+- **Fußball:** oben in der Karte stehen immer die Spiele deiner Vereine, ihr Name in der
+  Akzentfarbe: vor dem Spiel Tag und Anstoßzeit (bis acht Tage voraus), während des Spiels
+  die Spielminute und der Stand (jede Minute neu), danach das Ergebnis. Große Derbys von
+  heute stehen ebenfalls oben und tragen die Marke `DERBY`. Darunter blättert die Karte
+  alle zehn Sekunden durch die Spiele von heute, eine Liga nach der anderen.
+  *Optionen › Fußball-Vereine* wählt deine Vereine (voreingestellt: Bielefeld, Dortmund,
+  Bayern, Real Madrid, Galatasaray, Bournemouth), *Optionen › Fußball-Ligen* die Ligen für
+  „Heute“ (voreingestellt: Bundesliga, 2. Bundesliga, Premier League, LaLiga, Süper Lig,
+  Champions League). *Optionen › Fußball-Ticker*: *Meine Vereine + Heute*, *Nur meine
+  Vereine* oder *Aus*.
 
 Dein Ort fehlt in der Liste? In `home.conf` eine Zeile `place=Name|Breite|Länge`
 eintragen, z. B. `place=Minden|52.29|8.92`.
 
 Die Daten kommen von drei kostenlosen Diensten ohne Konto:
 [open-meteo.com](https://open-meteo.com) (Wetter), [aladhan.com](https://aladhan.com)
-(Gebetszeiten) und [openligadb.de](https://www.openligadb.de) (Fußball, von Freiwilligen
-gepflegt, der Spielstand kann ein paar Minuten nachhängen). Wetter und Gebetszeiten
+(Gebetszeiten) und der Spielstand-Schnittstelle von espn.com (Fußball; sie ist nicht
+offiziell für fremde Apps gedacht und kann sich ändern, dann bleibt die Fußball-Karte leer,
+bis die Klasse `Soccer` angepasst ist). Wetter und Gebetszeiten
 bekommen die Koordinaten des gewählten Ortes, sonst nichts. Dafür hat die App jetzt die
 Berechtigung für Internetzugriff; alles andere bleibt offline.
 

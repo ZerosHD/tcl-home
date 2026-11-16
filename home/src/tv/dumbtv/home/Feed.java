@@ -35,29 +35,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * The only part of the app that talks to the internet: what the lock screen shows in its
- * bottom right corner. Three free services, none of which needs an account or a key:
- * the weather from open-meteo.com, the prayer times from aladhan.com and football scores
- * from openligadb.de. Weather and prayer times send the coordinates of the town picked in
+ * Weather and prayer times for the lock screen, from two free services that need no account
+ * and no key: open-meteo.com and aladhan.com. Both get the coordinates of the town picked in
  * Options, nothing else. Every answer is kept, so the lock screen has something to show at
- * once and while the TV is offline.
+ * once and while the TV is offline. Football lives in {@link Soccer}.
  */
 final class Feed {
-    /** OpenLigaDB league shortcuts offered in Options; home.conf may name any other one. */
-    static final String[][] LEAGUES = {
-        {"bl1", "Bundesliga"}, {"bl2", "2. Bundesliga"}, {"bl3", "3. Liga"},
-        {"dfb", "DFB-Pokal"}, {"ucl", "Champions League"}, {"uel2026", "Europa League"},
-        {"uecl2026", "Conference League"}, {"la1", "LaLiga"}, {"pl", "Premier League"},
-    };
     static final String KEY_PLACE = "place";
-    static final String KEY_LEAGUES = "leagues";
-    static final String KEY_CLUBS = "clubs";
-    /** Stored instead of an empty list, which Config would drop and so turn back into the default. */
-    static final String NONE = "none";
-    private static final String DEFAULT_LEAGUES = "bl1,bl2,dfb,ucl,la1";
-    /** Bayern München, Borussia Dortmund, Arminia Bielefeld, Real Madrid. */
-    private static final String DEFAULT_CLUBS = "40,7,83,1133";
-
     /** Name|latitude|longitude, the form the place is stored in. */
     static final String[] PLACES = {
         "Aachen|50.78|6.08", "Augsburg|48.37|10.90", "Berlin|52.52|13.40", "Bielefeld|52.02|8.53",
@@ -90,28 +74,7 @@ final class Feed {
 
     private static final long MINUTE = 60_000L, HOUR = 60 * MINUTE;
     private static final long WEATHER_EVERY = 30 * MINUTE, WEATHER_STALE = 3 * HOUR;
-    private static final long LEAGUE_EVERY = 15 * MINUTE, LEAGUE_LIVE_EVERY = MINUTE;
     private static final long RETRY = 2 * MINUTE;
-    /** A match counts as running for this long after kick-off unless the data says it is over. */
-    private static final long LIVE_FOR = 3 * HOUR;
-    private static final long AHEAD = 8 * 24 * HOUR, BEHIND = 18 * HOUR;
-    private static final int MAX_LINES = 5;
-
-    static final class Match {
-        long kickoff;
-        boolean finished;
-        int id1, id2, goals1, goals2;
-        String team1, team2;
-
-        boolean live(long now) {
-            return !finished && now >= kickoff && now < kickoff + LIVE_FOR;
-        }
-
-        boolean upcoming(long now) {
-            return now < kickoff;
-        }
-    }
-
     private static Feed instance;
 
     private final Context app;
@@ -119,7 +82,6 @@ final class Feed {
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     /** When each fetch was last started, in elapsed time, so a failure is not retried at once. */
     private final Map<String, Long> tried = new HashMap<>();
-    private final Map<String, List<Match>> byLeague = new ConcurrentHashMap<>();
 
     /** One reading: now, and today's range. Immutable, so the lock screen can read it from its own thread. */
     static final class Weather {
@@ -170,14 +132,6 @@ final class Feed {
             prayers = p[1].split(",");
             prayerKey = p[0];
         }
-        for (String key : store.getAll().keySet()) {
-            if (!key.startsWith("league.")) continue;
-            try {
-                byLeague.put(key.substring(7), decode(new JSONArray(store.getString(key, "[]"))));
-            } catch (JSONException | ClassCastException ignored) {
-                // fetched again
-            }
-        }
     }
 
     // ---------------------------------------------------------------- settings
@@ -195,23 +149,6 @@ final class Feed {
         return p;
     }
 
-    static List<String> leagues(Config cfg) {
-        return csv(cfg.get(KEY_LEAGUES, DEFAULT_LEAGUES));
-    }
-
-    static List<String> clubs(Config cfg) {
-        return csv(cfg.get(KEY_CLUBS, DEFAULT_CLUBS));
-    }
-
-    private static List<String> csv(String value) {
-        List<String> out = new ArrayList<>();
-        for (String s : value.split(",")) {
-            String t = s.trim();
-            if (!t.isEmpty() && !NONE.equals(t)) out.add(t);
-        }
-        return out;
-    }
-
     // ---------------------------------------------------------------- what the lock screen shows
 
     /** The weather for the picked town, or null when it is off, has no town or is too old to trust. */
@@ -227,50 +164,6 @@ final class Feed {
     String[] prayers(Config cfg) {
         String key = prayerKey(cfg);
         return key != null && key.equals(prayerKey) ? prayers : null;
-    }
-
-    /** The matches worth a line right now: running first, then the next ones, then the last results. */
-    List<Match> matches(Config cfg) {
-        List<Match> out = new ArrayList<>();
-        String mode = cfg.get(Config.FOOTBALL);
-        if ("off".equals(mode)) return out;
-        final long now = System.currentTimeMillis();
-        List<String> clubs = clubs(cfg);
-        for (String league : leagues(cfg)) {
-            List<Match> all = byLeague.get(league);
-            if (all == null) continue;
-            for (Match m : all) {
-                if (!"all".equals(mode) && !mine(m, clubs)) continue;
-                if (m.kickoff - now > AHEAD || now - m.kickoff > BEHIND) continue;
-                if (!contains(out, m)) out.add(m);
-            }
-        }
-        Collections.sort(out, new Comparator<Match>() {
-            @Override
-            public int compare(Match a, Match b) {
-                int ra = rank(a, now), rb = rank(b, now);
-                if (ra != rb) return ra - rb;
-                // the next kick-off first, the latest result first
-                return ra == 2 ? Long.compare(b.kickoff, a.kickoff) : Long.compare(a.kickoff, b.kickoff);
-            }
-        });
-        return out.size() > MAX_LINES ? new ArrayList<>(out.subList(0, MAX_LINES)) : out;
-    }
-
-    private static int rank(Match m, long now) {
-        return m.live(now) ? 0 : m.upcoming(now) ? 1 : 2;
-    }
-
-    private static boolean mine(Match m, List<String> clubs) {
-        return clubs.contains(String.valueOf(m.id1)) || clubs.contains(String.valueOf(m.id2));
-    }
-
-    /** The same fixture can be listed by two leagues that a home.conf names twice. */
-    private static boolean contains(List<Match> list, Match m) {
-        for (Match o : list) {
-            if (o.kickoff == m.kickoff && o.id1 == m.id1 && o.id2 == m.id2) return true;
-        }
-        return false;
     }
 
     // ---------------------------------------------------------------- fetching
@@ -305,28 +198,6 @@ final class Feed {
             });
         }
 
-        String mode = cfg.get(Config.FOOTBALL);
-        if ("off".equals(mode)) return;
-        List<String> clubs = clubs(cfg);
-        for (final String league : leagues(cfg)) {
-            boolean hot = false;
-            List<Match> known = byLeague.get(league);
-            if (known != null) {
-                for (Match m : known) {
-                    if (!"all".equals(mode) && !mine(m, clubs)) continue;
-                    // from ten minutes before kick-off until the data says it is over
-                    if (!m.finished && now >= m.kickoff - 10 * MINUTE && now < m.kickoff + LIVE_FOR) hot = true;
-                }
-            }
-            if (due("league." + league, hot ? LEAGUE_LIVE_EVERY : LEAGUE_EVERY)) {
-                io.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        fetchLeague(league);
-                    }
-                });
-            }
-        }
     }
 
     /** True, and remembered, when this fetch was not started within the last {@code every} ms. */
@@ -399,119 +270,11 @@ final class Feed {
         }
     }
 
-    private void fetchLeague(String league) {
-        try {
-            JSONArray raw = new JSONArray(http("https://api.openligadb.de/getmatchdata/" + encode(league)));
-            JSONArray slim = new JSONArray();
-            SimpleDateFormat utc = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
-            utc.setTimeZone(TimeZone.getTimeZone("UTC"));
-            for (int i = 0; i < raw.length(); i++) {
-                JSONObject m = raw.getJSONObject(i);
-                JSONObject one = m.getJSONObject("team1"), two = m.getJSONObject("team2");
-                int[] score = score(m);
-                JSONObject s = new JSONObject();
-                s.put("k", utc.parse(m.getString("matchDateTimeUTC")).getTime());
-                s.put("f", m.optBoolean("matchIsFinished"));
-                s.put("i1", one.getInt("teamId"));
-                s.put("i2", two.getInt("teamId"));
-                s.put("n1", name(one));
-                s.put("n2", name(two));
-                s.put("g1", score[0]);
-                s.put("g2", score[1]);
-                slim.put(s);
-            }
-            byLeague.put(league, decode(slim));
-            store.edit().putString("league." + league, slim.toString()).apply();
-        } catch (IOException | JSONException | ParseException | RuntimeException e) {
-            Log.w("dumbtv", "football " + league + ": " + e);
-        }
-    }
-
-    /** The final result if there is one, else the score after the last goal, else the latest interim result. */
-    private static int[] score(JSONObject m) {
-        int[] out = {0, 0};
-        JSONArray goals = m.optJSONArray("goals");
-        int most = -1;
-        for (int i = 0; goals != null && i < goals.length(); i++) {
-            JSONObject g = goals.optJSONObject(i);
-            if (g == null) continue;
-            int a = g.optInt("scoreTeam1"), b = g.optInt("scoreTeam2");
-            if (a + b > most) {
-                most = a + b;
-                out[0] = a;
-                out[1] = b;
-            }
-        }
-        JSONArray results = m.optJSONArray("matchResults");
-        int order = -1;
-        for (int i = 0; results != null && i < results.length(); i++) {
-            JSONObject r = results.optJSONObject(i);
-            if (r == null) continue;
-            boolean end = r.optInt("resultTypeID") == 2;
-            int o = end ? Integer.MAX_VALUE : r.optInt("resultOrderID");
-            if ((end || most < 0) && o > order) {
-                order = o;
-                out[0] = r.optInt("pointsTeam1");
-                out[1] = r.optInt("pointsTeam2");
-            }
-        }
-        return out;
-    }
-
-    private static String name(JSONObject team) {
-        String s = team.isNull("shortName") ? "" : team.optString("shortName").trim();
-        return s.isEmpty() ? team.optString("teamName").trim() : s;
-    }
-
-    private static List<Match> decode(JSONArray slim) throws JSONException {
-        List<Match> out = new ArrayList<>();
-        for (int i = 0; i < slim.length(); i++) {
-            JSONObject s = slim.getJSONObject(i);
-            Match m = new Match();
-            m.kickoff = s.getLong("k");
-            m.finished = s.getBoolean("f");
-            m.id1 = s.getInt("i1");
-            m.id2 = s.getInt("i2");
-            m.team1 = s.getString("n1");
-            m.team2 = s.getString("n2");
-            m.goals1 = s.getInt("g1");
-            m.goals2 = s.getInt("g2");
-            out.add(m);
-        }
-        return out;
-    }
-
-    /**
-     * Every club of the given leagues this season as {id, name}, sorted by name. Blocks on the
-     * network, so Options calls it from its own thread. Empty when nothing could be loaded.
-     */
-    List<String[]> teams(List<String> leagues) {
-        Calendar c = Calendar.getInstance();
-        int season = c.get(Calendar.YEAR) - (c.get(Calendar.MONTH) >= Calendar.JULY ? 0 : 1);
-        Map<String, String> byName = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (String league : leagues) {
-            try {
-                JSONArray raw = new JSONArray(http("https://api.openligadb.de/getavailableteams/"
-                        + encode(league) + "/" + season));
-                for (int i = 0; i < raw.length(); i++) {
-                    JSONObject t = raw.getJSONObject(i);
-                    String n = t.optString("teamName").trim();
-                    if (!n.isEmpty()) byName.put(n, String.valueOf(t.getInt("teamId")));
-                }
-            } catch (IOException | JSONException | RuntimeException e) {
-                Log.w("dumbtv", "teams " + league + ": " + e);
-            }
-        }
-        List<String[]> out = new ArrayList<>();
-        for (Map.Entry<String, String> e : byName.entrySet()) out.add(new String[] {e.getValue(), e.getKey()});
-        return out;
-    }
-
-    private static String encode(String part) throws IOException {
+    static String encode(String part) throws IOException {
         return URLEncoder.encode(part, "UTF-8").replace("+", "%20");
     }
 
-    private static String http(String url) throws IOException {
+    static String http(String url) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setConnectTimeout(8000);
         c.setReadTimeout(12000);

@@ -40,7 +40,7 @@ final class SaverView extends FrameLayout {
     private final LinearLayout gamesCard, prayerCard, weatherCard;
     /** Text on the cards that is not highlighted. */
     private static final int QUIET = 0xCCFFFFFF;
-    private final TextView games, degrees, skyText, range;
+    private final TextView games, pageTitle, pageLines, degrees, skyText, range;
     private final TextView[] prayerName = new TextView[Feed.PRAYER_NAMES.length];
     private final TextView[] prayerTime = new TextView[Feed.PRAYER_NAMES.length];
     private final WeatherIcon sky;
@@ -105,9 +105,16 @@ final class SaverView extends FrameLayout {
         side.setGravity(Gravity.END);
 
         gamesCard = card(c, "Fußball");
-        games = Ui.text(c, 12, 0xCCFFFFFF, Ui.MEDIUM);
+        games = Ui.text(c, 12, QUIET, Ui.MEDIUM);
         games.setLineSpacing(Ui.dp(c, 4), 1f);
         gamesCard.addView(games);
+        pageTitle = Ui.text(c, 9, 0x80FFFFFF, Ui.MEDIUM);
+        pageTitle.setLetterSpacing(0.12f);
+        gamesCard.addView(pageTitle);
+        pageLines = Ui.text(c, 12, QUIET, Ui.MEDIUM);
+        pageLines.setLineSpacing(Ui.dp(c, 4), 1f);
+        pageLines.setPadding(0, Ui.dp(c, 5), 0, 0);
+        gamesCard.addView(pageLines);
 
         // One row per prayer: the name on the left, the time on the right. Each is its own
         // single-line view with room for five digits, so a time can never wrap or lose a digit.
@@ -235,39 +242,84 @@ final class SaverView extends FrameLayout {
             prayerCard.setVisibility(VISIBLE);
         }
 
-        List<Feed.Match> matches = feed.matches(cfg);
-        if (matches.isEmpty()) {
+        Soccer soccer = Soccer.get(c);
+        soccer.refresh(cfg);
+        List<Soccer.Match> top = soccer.top(cfg);
+        List<Soccer.Page> pages = soccer.pages(cfg);
+        if (top.isEmpty() && pages.isEmpty()) {
             gamesCard.setVisibility(GONE);
             return;
         }
-        long ms = now.getTime();
-        SimpleDateFormat day = new SimpleDateFormat("EE dd.MM.", Locale.GERMAN);
-        SimpleDateFormat hour = new SimpleDateFormat("HH:mm", Locale.GERMAN);
-        SimpleDateFormat stamp = new SimpleDateFormat("yyyyMMdd", Locale.US);
-        String today = stamp.format(now);
+        List<String> clubs = Soccer.clubs(cfg);
+        int accent = cfg.accent();
+
         SpannableStringBuilder s = new SpannableStringBuilder();
-        for (Feed.Match m : matches) {
-            if (s.length() > 0) s.append("\n");
-            Date kick = new Date(m.kickoff);
-            if (m.upcoming(ms)) {
-                String when = stamp.format(kick).equals(today) ? "Heute" : day.format(kick);
-                s.append(when).append(" ").append(hour.format(kick)).append("   ")
-                        .append(m.team1).append(" – ").append(m.team2);
-            } else {
-                if (m.live(ms)) {
-                    int from = s.length();
-                    s.append("● LIVE");
-                    s.setSpan(new ForegroundColorSpan(0xFFFF5147), from, s.length(),
-                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    s.append("   ");
-                }
-                s.append(m.team1).append("  ").append(String.valueOf(m.goals1)).append(":")
-                        .append(String.valueOf(m.goals2)).append("  ").append(m.team2);
-                if (m.finished) s.append("   Ende");
-            }
-        }
+        for (Soccer.Match m : top) line(s, m, clubs, accent, now, true);
         games.setText(s);
+        games.setVisibility(top.isEmpty() ? GONE : VISIBLE);
+
+        if (pages.isEmpty()) {
+            pageTitle.setVisibility(GONE);
+            pageLines.setVisibility(GONE);
+        } else {
+            // One league at a time, the next one every ten seconds.
+            Soccer.Page page = pages.get((int) (now.getTime() / 10_000 % pages.size()));
+            pageTitle.setText(("Heute · " + page.title).toUpperCase(Locale.GERMAN));
+            pageTitle.setPadding(0, top.isEmpty() ? 0 : Ui.dp(c, 9), 0, 0);
+            SpannableStringBuilder p = new SpannableStringBuilder();
+            for (Soccer.Match m : page.matches) line(p, m, clubs, accent, now, false);
+            pageLines.setText(p);
+            pageTitle.setVisibility(VISIBLE);
+            pageLines.setVisibility(VISIBLE);
+        }
         gamesCard.setVisibility(VISIBLE);
+    }
+
+    /**
+     * One match as a line: when or how it stands, then the two clubs. Favourite clubs are written
+     * in the accent color, a derby gets a mark. {@code withDay} names the day of a later match.
+     */
+    private static void line(SpannableStringBuilder s, Soccer.Match m, List<String> clubs, int accent,
+            Date now, boolean withDay) {
+        if (s.length() > 0) s.append("\n");
+        int from = s.length();
+        Date kick = new Date(m.kickoff);
+        if (m.live()) {
+            s.append("● ").append(m.clock);
+            color(s, from, 0xFFFF5147);
+        } else if (m.over()) {
+            s.append("Ende");
+            color(s, from, 0x80FFFFFF);
+        } else {
+            SimpleDateFormat stamp = new SimpleDateFormat("yyyyMMdd", Locale.US);
+            if (withDay) {
+                s.append(stamp.format(kick).equals(stamp.format(now)) ? "Heute"
+                        : new SimpleDateFormat("EE dd.MM.", Locale.GERMAN).format(kick)).append(" ");
+            }
+            s.append(new SimpleDateFormat("HH:mm", Locale.GERMAN).format(kick));
+        }
+        s.append("   ");
+        from = s.length();
+        s.append(m.homeName);
+        if (clubs.contains(String.valueOf(m.home))) color(s, from, accent);
+        if (m.live() || m.over()) {
+            s.append("  ").append(String.valueOf(m.goalsHome)).append(":")
+                    .append(String.valueOf(m.goalsAway)).append("  ");
+        } else {
+            s.append(" – ");
+        }
+        from = s.length();
+        s.append(m.awayName);
+        if (clubs.contains(String.valueOf(m.away))) color(s, from, accent);
+        if (m.derby) {
+            from = s.length();
+            s.append("   DERBY");
+            color(s, from, 0xFFFFB340);
+        }
+    }
+
+    private static void color(SpannableStringBuilder s, int from, int color) {
+        s.setSpan(new ForegroundColorSpan(color), from, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
     void start() {

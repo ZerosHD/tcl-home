@@ -78,7 +78,7 @@ public final class Options extends Activity {
                 + getPackageName() + "/ instead"
                 + "\nAdaptive wallpaper tint shows graphite until you add a wallpaper"
                 + "\nInternet nur für den Sperrbildschirm: Wetter (open-meteo.com), Gebetszeiten"
-                + " (aladhan.com), Fußball (openligadb.de)"
+                + " (aladhan.com), Fußball (espn.com)"
                 + "\nNo tracking, no ads, no accounts.");
         list.addView(about);
 
@@ -231,20 +231,20 @@ public final class Options extends Activity {
     }
 
     private void pickLeagues() {
-        List<String> chosen = Feed.leagues(cfg);
-        CharSequence[] names = new CharSequence[Feed.LEAGUES.length];
-        boolean[] on = new boolean[Feed.LEAGUES.length];
+        List<String> chosen = Soccer.leagues(cfg);
+        CharSequence[] names = new CharSequence[Soccer.LEAGUES.length];
+        boolean[] on = new boolean[Soccer.LEAGUES.length];
         for (int i = 0; i < names.length; i++) {
-            names[i] = Feed.LEAGUES[i][1];
-            on[i] = chosen.contains(Feed.LEAGUES[i][0]);
+            names[i] = Soccer.LEAGUES[i][1];
+            on[i] = chosen.contains(Soccer.LEAGUES[i][0]);
         }
         new AlertDialog.Builder(this, Ui.DIALOG)
                 .setTitle("Fußball-Ligen")
                 .setMultiChoiceItems(names, on, (d, which, checked) -> {
-                    String id = Feed.LEAGUES[which][0];
+                    String id = Soccer.LEAGUES[which][0];
                     chosen.remove(id);
                     if (checked) chosen.add(id);
-                    cfg.set(Feed.KEY_LEAGUES, chosen.isEmpty() ? Feed.NONE : TextUtils.join(",", chosen));
+                    cfg.set(Soccer.KEY_LEAGUES, chosen.isEmpty() ? Soccer.NONE : TextUtils.join(",", chosen));
                 })
                 .setPositiveButton("Fertig", null)
                 .show();
@@ -252,15 +252,14 @@ public final class Options extends Activity {
 
     /** The clubs of the chosen leagues come from the internet, so the list takes a moment. */
     private void pickClubs() {
-        List<String> leagues = Feed.leagues(cfg);
+        List<String> leagues = Soccer.leagues(cfg);
         if (leagues.isEmpty()) {
             Toast.makeText(this, "Zuerst unter Fußball-Ligen eine Liga wählen.", Toast.LENGTH_LONG).show();
             return;
         }
         Toast.makeText(this, "Lade Vereine …", Toast.LENGTH_SHORT).show();
-        Feed feed = Feed.get(this);
         new Thread(() -> {
-            List<String[]> teams = feed.teams(leagues);
+            List<String[]> teams = Soccer.teams(leagues);
             runOnUiThread(() -> showClubs(teams));
         }).start();
     }
@@ -271,7 +270,7 @@ public final class Options extends Activity {
             Toast.makeText(this, "Vereinsliste nicht geladen. Internet prüfen.", Toast.LENGTH_LONG).show();
             return;
         }
-        List<String> chosen = Feed.clubs(cfg);
+        List<String> chosen = Soccer.clubs(cfg);
         CharSequence[] names = new CharSequence[teams.size()];
         boolean[] on = new boolean[teams.size()];
         for (int i = 0; i < names.length; i++) {
@@ -284,7 +283,7 @@ public final class Options extends Activity {
                     String id = teams.get(which)[0];
                     chosen.remove(id);
                     if (checked) chosen.add(id);
-                    cfg.set(Feed.KEY_CLUBS, chosen.isEmpty() ? Feed.NONE : TextUtils.join(",", chosen));
+                    cfg.set(Soccer.KEY_CLUBS, chosen.isEmpty() ? Soccer.NONE : TextUtils.join(",", chosen));
                 })
                 .setPositiveButton("Fertig", null)
                 .show();
