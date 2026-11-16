@@ -83,6 +83,7 @@ Git Bash, auf dem Mac oder unter Linux `./tcl.sh backup`.
 | Home-Screen | `./tcl.sh home` | TCL Home statt Google TV (siehe unten) |
 | Hintergrund | `./tcl.sh hintergrund foto.jpg` | eigenes Bild statt der eingebauten Berge |
 | Hintergründe | `./tcl.sh hintergruende` | 30 zufällige Google-/Chromecast-Backdrops, wechseln stündlich |
+| Edle Hintergründe | `./tcl.sh hintergruende edel` | 36 Bilder in hoher Auflösung: Satellitenfotos (Google Earth View), ausgezeichnete Fotos von Sehenswürdigkeiten (Wikimedia Commons) und Gemälde (Metropolitan Museum). Einzeln: `erde`, `orte`, `kunst`; eine Zahl dahinter ändert die Anzahl. Ersetzt die bisherigen Hintergründe auf dem TV |
 
 [listen/niemals.txt](listen/niemals.txt) wird nie angefasst: HDMI-Eingänge,
 Fernbedienung, Einstellungen, Chromecast, AirPlay, Sprachsuche, Play Store,

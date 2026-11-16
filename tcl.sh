@@ -14,6 +14,8 @@
 #   ./tcl.sh hintergrund <bild>  eigenes Hintergrundbild (jpg/png) auf den TV
 #   ./tcl.sh hintergruende [n|ordner|aus]  wechselnde Hintergründe: n Google-Backdrops
 #                                (Standard 30) oder alle Bilder aus einem Ordner
+#   ./tcl.sh hintergruende edel [n]        edle Hintergründe: Satellitenbilder, Fotos von
+#                                Sehenswürdigkeiten und Gemälde (einzeln: erde, orte, kunst)
 #   ./tcl.sh youtube             SmartTube installieren (YouTube ohne Werbung)
 #   ./tcl.sh update              neue TCL-Home-Version auf den TV (nach git pull)
 #   ./tcl.sh tasten [aus]        Tasten der Fernbedienung belegen (Netflix, YouTube, ...)
@@ -515,9 +517,162 @@ set_home_conf() {
   adb_ push "$tmp.new" "$HOME_MEDIA/home.conf" >/dev/null
 }
 
+# ---------------------------------------------------------------- edle Hintergründe
+# Three sources of pictures that look good on a large screen, none of which needs an account:
+# satellite views, museum paintings and prize-winning photographs of landmarks.
+
+# Satellite pictures from Google Earth View. There is no public list of them; the ids run
+# from about 1000 to 2450 with gaps, so random ones are tried until enough have arrived.
+fetch_earth() {
+  local dir=$1 want=$2 have tries=0 id f
+  have=$(ls "$dir"/erde-*.jpg 2>/dev/null | wc -l | tr -d ' ')
+  note "lade Satellitenbilder (Google Earth View) nach $dir/"
+  while [[ $have -lt $want && $tries -lt $((want * 5 + 10)) ]]; do
+    tries=$((tries + 1))
+    id=$((RANDOM % 1450 + 1000))
+    f=$dir/erde-$id.jpg
+    [[ -s $f ]] && continue
+    if curl -fsSL --connect-timeout 15 -o "$f" "https://www.gstatic.com/prettyearth/assets/full/$id.jpg" 2>/dev/null \
+        && [[ -s $f ]]; then
+      have=$((have + 1)); printf '.'
+    else
+      rm -f "$f"
+    fi
+  done
+  printf '\n'
+}
+
+# Paintings from the Metropolitan Museum of Art's open-access collection (public domain, CC0).
+# Only pictures clearly wider than tall are taken, so a TV shows them without cutting half away.
+MET=https://collectionapi.metmuseum.org/public/collection
+fetch_art() {
+  local dir=$1 want=$2 have tries=0 id f json url box wide topic total offset ids
+  local topics=(landscape sea river mountain garden sky harbor)
+  have=$(ls "$dir"/kunst-*.jpg 2>/dev/null | wc -l | tr -d ' ')
+  note "lade Gemälde (Metropolitan Museum of Art, gemeinfrei) nach $dir/"
+  while [[ $have -lt $want && $tries -lt 15 ]]; do
+    tries=$((tries + 1))
+    topic=${topics[RANDOM % ${#topics[@]}]}
+    json=$(curl -fsSL --connect-timeout 15 \
+      "$MET/v1.1/search?hasImages=true&isPublicDomain=true&medium=Paintings&q=$topic&limit=1&offset=0" 2>/dev/null) || continue
+    total=$(printf '%s' "$json" | sed -n 's/.*"total": *\([0-9]*\).*/\1/p')
+    [[ -n $total && $total -gt 0 ]] || continue
+    offset=0
+    [[ $total -gt 40 ]] && offset=$((RANDOM % (total - 40)))
+    ids=$(curl -fsSL --connect-timeout 15 \
+      "$MET/v1.1/search?hasImages=true&isPublicDomain=true&medium=Paintings&q=$topic&limit=40&offset=$offset" 2>/dev/null \
+      | sed -n 's/.*"objectIDs": *\[\([^]]*\)\].*/\1/p' | tr ',' '\n' | tr -d ' ')
+    for id in $ids; do
+      [[ $have -lt $want ]] || break
+      f=$dir/kunst-$id.jpg
+      [[ -s $f ]] && continue
+      json=$(curl -fsSL --connect-timeout 15 "$MET/v1/objects/$id" 2>/dev/null) || continue
+      box=$(printf '%s' "$json" | grep -o '"elementMeasurements":{[^}]*}' | tail -1)
+      wide=$(printf '%s' "$box" | awk '{
+        h = $0; w = $0
+        if (h !~ /"Height":/ || w !~ /"Width":/) { print 0; exit }
+        sub(/.*"Height":/, "", h); sub(/[,}].*/, "", h)
+        sub(/.*"Width":/, "", w);  sub(/[,}].*/, "", w)
+        print (w + 0 > (h + 0) * 1.25) ? 1 : 0 }')
+      [[ $wide == 1 ]] || continue
+      url=$(printf '%s' "$json" | grep -o '"primaryImage":"[^"]*"' | head -1 | sed 's/^"primaryImage":"\(.*\)"$/\1/')
+      [[ -n $url ]] || continue
+      if curl -fsSL --connect-timeout 15 -o "$f" "$url" 2>/dev/null && [[ -s $f ]]; then
+        shrink "$f" 4
+        have=$((have + 1)); printf '.'
+      else
+        rm -f "$f"
+      fi
+    done
+  done
+  printf '\n'
+}
+
+# Landmarks, castles, bridges and city views from Wikimedia Commons' "featured pictures", the
+# few thousand photographs its community has voted the best. Free licenses, most of them asking
+# for the photographer's name when published; as a wallpaper at home that does not arise.
+COMMONS=https://commons.wikimedia.org/w/api.php
+COMMONS_UA="tcl-home-wallpapers/1.0 (personal TV wallpaper script)"
+fetch_sights() {
+  local dir=$1 want=$2 have tries=0 cat letter page id w h url f
+  local cats=("Featured pictures of buildings" "Featured pictures of castles" "Featured pictures of bridges"
+              "Featured pictures of cityscapes" "Featured pictures of skylines" "Featured pictures of architecture")
+  local letters=ABCDEFGHIJKLMNOPRSTUVW
+  have=$(ls "$dir"/ort-*.jpg 2>/dev/null | wc -l | tr -d ' ')
+  note "lade Fotos von Sehenswürdigkeiten (Wikimedia Commons, ausgezeichnete Bilder) nach $dir/"
+  while [[ $have -lt $want && $tries -lt 25 ]]; do
+    tries=$((tries + 1))
+    cat=${cats[RANDOM % ${#cats[@]}]}
+    letter=${letters:RANDOM % ${#letters}:1}
+    while read -r page; do
+      [[ $have -lt $want ]] || break
+      [[ $page == *'"mime":"image/jpeg"'* ]] || continue
+      id=$(printf '%s' "$page" | sed -n 's/^"pageid":\([0-9]*\).*/\1/p')
+      w=$(printf '%s' "$page" | sed -n 's/.*"size":[0-9]*,"width":\([0-9]*\),"height":[0-9]*.*/\1/p')
+      h=$(printf '%s' "$page" | sed -n 's/.*"size":[0-9]*,"width":[0-9]*,"height":\([0-9]*\).*/\1/p')
+      url=$(printf '%s' "$page" | grep -o '"thumburl":"[^"]*"' | head -1 | sed 's/^"thumburl":"\([^"?]*\).*/\1/')
+      [[ -n $id && -n $w && -n $h && -n $url ]] || continue
+      # sharp enough, landscape, and not a panorama strip that would lose its sides
+      [[ $w -ge 3000 && $((w * 10)) -ge $((h * 13)) && $((w * 10)) -le $((h * 21)) ]] || continue
+      f=$dir/ort-$id.jpg
+      [[ -s $f ]] && continue
+      if curl -fsSL --connect-timeout 15 -A "$COMMONS_UA" -o "$f" "$url" 2>/dev/null && [[ -s $f ]]; then
+        shrink "$f"
+        have=$((have + 1)); printf '.'
+      else
+        rm -f "$f"
+      fi
+    done < <(curl -fsSL --connect-timeout 15 -A "$COMMONS_UA" -G "$COMMONS" \
+               --data-urlencode "action=query" --data-urlencode "format=json" \
+               --data-urlencode "generator=categorymembers" --data-urlencode "gcmtitle=Category:$cat" \
+               --data-urlencode "gcmtype=file" --data-urlencode "gcmlimit=12" \
+               --data-urlencode "gcmsort=sortkey" --data-urlencode "gcmstartsortkeyprefix=$letter" \
+               --data-urlencode "prop=imageinfo" --data-urlencode "iiprop=url|size|mime" \
+               --data-urlencode "iiurlwidth=2560" 2>/dev/null \
+             | sed 's/"pageid":/\n&/g' | grep '^"pageid":')
+  done
+  printf '\n'
+}
+
+# Originals can be 4000 pixels wide and 10 MB each. On Windows they are scaled to 2560 pixels,
+# plenty for the TV's 1080p home screen; elsewhere they are pushed as they are and the app
+# scales them while loading. A second argument trims that many percent off every side first:
+# the museum photographs its paintings with the canvas edge and a black surround.
+shrink() {
+  local f=$1 trim=${2:-0} size win
+  size=$(wc -c <"$f" | tr -d ' ')
+  [[ $size -gt 1500000 || $trim -gt 0 ]] || return 0
+  command -v powershell.exe >/dev/null 2>&1 || return 0
+  win=$(cygpath -w "$(cd "$(dirname "$f")" && pwd)/$(basename "$f")" 2>/dev/null) || return 0
+  TCL_IMG=$win TCL_TRIM=$trim powershell.exe -NoProfile -Command '
+    Add-Type -AssemblyName System.Drawing
+    $p = $env:TCL_IMG
+    $i = [System.Drawing.Image]::FromFile($p)
+    $dx = [int]($i.Width * [int]$env:TCL_TRIM / 100)
+    $dy = [int]($i.Height * [int]$env:TCL_TRIM / 100)
+    $sw = $i.Width - 2 * $dx
+    $sh = $i.Height - 2 * $dy
+    $w = [Math]::Min(2560, $sw)
+    $h = [int]($sh * $w / $sw)
+    $b = New-Object System.Drawing.Bitmap($w, $h)
+    $g = [System.Drawing.Graphics]::FromImage($b)
+    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $to = New-Object System.Drawing.Rectangle(0, 0, $w, $h)
+    $from = New-Object System.Drawing.Rectangle($dx, $dy, $sw, $sh)
+    $g.DrawImage($i, $to, $from, [System.Drawing.GraphicsUnit]::Pixel)
+    $g.Dispose(); $i.Dispose()
+    $c = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq "image/jpeg" }
+    $e = New-Object System.Drawing.Imaging.EncoderParameters(1)
+    $e.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter([System.Drawing.Imaging.Encoder]::Quality, [long]90)
+    $b.Save($p + ".tmp", $c, $e)
+    $b.Dispose()
+    Move-Item -Force ($p + ".tmp") $p
+  ' >/dev/null 2>&1 || true
+}
+
 cmd_hintergruende() {
   pick_device
-  local arg=${1:-30} dir n=0 url name f
+  local arg=${1:-30} dir n=0 url name f fresh=0 want third
   if [[ $arg == aus ]]; then
     step "Wechselnde Hintergründe entfernen"
     dev rm -rf "$HOME_MEDIA/wallpapers"
@@ -528,6 +683,23 @@ cmd_hintergruende() {
   step "Wechselnde Hintergründe"
   if [[ -d $arg ]]; then
     dir=$arg
+  elif [[ $arg == edel || $arg == erde || $arg == kunst || $arg == orte ]]; then
+    want=${2:-36}
+    [[ $want =~ ^[0-9]+$ && $want -gt 0 ]] || die "usage: ./tcl.sh hintergruende $arg [anzahl]"
+    dir=hintergruende-$arg
+    mkdir -p "$dir"
+    case $arg in
+      erde)  fetch_earth "$dir" "$want" ;;
+      kunst) fetch_art "$dir" "$want" ;;
+      orte)  fetch_sights "$dir" "$want" ;;
+      edel)  third=$(( (want + 2) / 3 ))
+             fetch_earth "$dir" "$third"; fetch_sights "$dir" "$third"; fetch_art "$dir" "$third" ;;
+    esac
+    n=$(ls "$dir" | wc -l | tr -d ' ')
+    [[ $n -gt 0 ]] || die "kein Bild geladen. Internet ok?"
+    note "$n Bilder in $dir/"
+    # These sets replace what is on the TV; the plain numbered form keeps adding to it.
+    fresh=1
   elif [[ $arg =~ ^[0-9]+$ ]]; then
     dir=hintergruende
     mkdir -p "$dir" .cache
@@ -550,7 +722,11 @@ cmd_hintergruende() {
     [[ $n -gt 0 ]] || die "kein Bild geladen. Internet ok?"
     note "$n Bilder geladen"
   else
-    die "usage: ./tcl.sh hintergruende [anzahl | ordner | aus]"
+    die "usage: ./tcl.sh hintergruende [edel|erde|kunst|orte [anzahl] | anzahl | ordner | aus]"
+  fi
+  if [[ $fresh == 1 ]]; then
+    note "ersetze die bisherigen Hintergründe auf dem TV"
+    dev rm -rf "$HOME_MEDIA/wallpapers"
   fi
   dev mkdir -p "$HOME_MEDIA/wallpapers"
   n=0
@@ -561,8 +737,8 @@ cmd_hintergruende() {
   done
   [[ $n -gt 0 ]] || die "keine Bilder (jpg/png/webp) in $dir/"
   set_home_conf rotate "${ROTATE:-hourly}"
-  note "$n Bilder auf dem TV, Wechsel: ${ROTATE:-hourly}. Ändern: Optionen > Wallpaper rotation,"
-  note "sofort weiter: Optionen > Next wallpaper. Wirkt beim nächsten Druck auf HOME."
+  note "$n Bilder auf dem TV, Wechsel: ${ROTATE:-hourly}. Ändern: Optionen > Bildwechsel,"
+  note "sofort weiter: Optionen > Nächstes Hintergrundbild. Wirkt beim nächsten Druck auf HOME."
 }
 
 # Ein Backup ist ein Ordner unter backup/: TV-Einstellungen, deaktivierte Pakete, App-Liste,
