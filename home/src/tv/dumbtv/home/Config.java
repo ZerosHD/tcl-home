@@ -59,10 +59,15 @@ final class Config {
     static final Choice ACCENT = new Choice("accent", "Accent color", "blue",
             new String[] {"white", "blue", "cyan", "teal", "green", "amber", "orange", "red", "pink", "violet"},
             new String[] {"White", "Blue", "Cyan", "Teal", "Green", "Amber", "Orange", "Red", "Pink", "Violet"});
-    /** How the focused tile is marked: the ring alone, or the ring with a soft halo in the accent color. */
-    static final Choice FOCUS = new Choice("focus", "Fokus-Stil", "glow",
-            new String[] {"glow", "ring"},
-            new String[] {"Leuchten", "Nur Rahmen"});
+    /** How the focused tile is marked: raised with a shadow and a bright edge, the ring with a
+     * soft halo in the accent color, or the ring alone. */
+    static final Choice FOCUS = new Choice("focus", "Fokus-Stil", "lift",
+            new String[] {"lift", "glow", "ring"},
+            new String[] {"Anheben", "Leuchten", "Nur Rahmen"});
+    /** A frosted panel behind the first row of the app grid. */
+    static final Choice DOCK = new Choice("dock", "Dock (erste Reihe)", "on",
+            new String[] {"on", "off"},
+            new String[] {"An", "Aus"});
     static final Choice TILES = new Choice("tiles", "Tile size", "large",
             new String[] {"small", "medium", "large"},
             new String[] {"Small", "Medium", "Large"});
@@ -132,7 +137,7 @@ final class Config {
     static final Choice FOOTBALL = new Choice("football", "Fußball-Ticker", "all",
             new String[] {"off", "clubs", "all"},
             new String[] {"Aus", "Nur meine Vereine", "Meine Vereine + Heute"});
-    static final Choice[] CHOICES = {ACCENT, FOCUS, TILES, LAYOUT, ORDER, LABELS, CLOCK, MEMORY, INPUTS, SWITCH, BACKGROUND, DIM, ROTATE, BACK, SAVER, LOCK, TILE_STYLE, WEATHER, PRAYER, FOOTBALL};
+    static final Choice[] CHOICES = {ACCENT, FOCUS, DOCK, TILES, LAYOUT, ORDER, LABELS, CLOCK, MEMORY, INPUTS, SWITCH, BACKGROUND, DIM, ROTATE, BACK, SAVER, LOCK, TILE_STYLE, WEATHER, PRAYER, FOOTBALL};
 
     /** Folder of wallpapers, next to home.conf, that Background › Image file rotates through. */
     static final String WALLPAPERS = "wallpapers";

@@ -68,6 +68,8 @@ public final class Home extends Activity {
     private FrameLayout root;
     private ImageView wall;
     private View shade;
+    /** The dim the shade was last built for; -1 for none, -2 before the first time. */
+    private int shadeDim = -2;
     private View tint;
     private TextView clock, date, net;
     private WifiIcon netIcon;
@@ -159,7 +161,7 @@ public final class Home extends Activity {
             scroll.setClipToPadding(false);
             scroll.setPadding(edge - bleed, 0, edge - bleed, 0);
             scroll.addView(strip, new FrameLayout.LayoutParams(WRAP, WRAP));
-            grid = new Grid(Home.this);
+            grid = new Grid(Home.this, Catalog.APPS.equals(kind));
             grid.setPadding(edge, dp(12), edge, dp(8));
             parent.addView(title, new LinearLayout.LayoutParams(MATCH, WRAP));
             parent.addView(scroll, new LinearLayout.LayoutParams(MATCH, WRAP));
@@ -681,7 +683,7 @@ public final class Home extends Activity {
         applied = cfg.version();
         int accent = cfg.accent();
         for (TextView c : chips) {
-            Ui.focusStyle(c, accent, 0x14FFFFFF, dp(18));
+            Ui.focusStyle(c, accent, 0x26FFFFFF, dp(18));
             c.setVisibility(locked() ? View.GONE : View.VISIBLE);
         }
         meter.setVisibility("on".equals(cfg.get(Config.MEMORY)) ? View.VISIBLE : View.GONE);
@@ -975,8 +977,20 @@ public final class Home extends Activity {
         }
         boolean builtIn = image && file == null;
         int dim = Integer.parseInt(cfg.get(Config.DIM));
-        shade.setBackgroundColor(file == null && !builtIn
-                ? Color.TRANSPARENT : Color.argb(dim * 255 / 100, 0, 0, 0));
+        int shadeNow = file == null && !builtIn ? -1 : dim;
+        if (shadeNow != shadeDim) {
+            shadeDim = shadeNow;
+            if (shadeNow < 0) {
+                shade.setBackgroundColor(Color.TRANSPARENT);
+            } else {
+                // Darker towards the bottom, where the tiles are, so the picture keeps its sky.
+                int a = dim * 255 / 100;
+                shade.setBackground(new android.graphics.drawable.GradientDrawable(
+                        android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                        new int[] {Color.argb(Math.min(255, a + 26), 0, 0, 0), Color.argb(a, 0, 0, 0),
+                                Color.argb(Math.min(255, a + 77), 0, 0, 0)}));
+            }
+        }
         String key = builtIn ? "built-in" : file == null ? null : file.getPath() + ":" + file.lastModified();
         if (key == null ? wallKey == null : key.equals(wallKey)) return;
         wallKey = key;

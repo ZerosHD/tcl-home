@@ -49,7 +49,10 @@ final class Ui {
     static void focusStyle(TextView v, int accent, int idle, float radius) {
         StateListDrawable bg = new StateListDrawable();
         bg.addState(new int[] {android.R.attr.state_focused}, round(accent, radius));
-        bg.addState(new int[0], round(idle, radius));
+        // A hairline edge makes the idle pill read as glass instead of a flat patch.
+        GradientDrawable resting = round(idle, radius);
+        resting.setStroke(Math.max(1, dp(v.getContext(), 0.75f)), 0x33FFFFFF);
+        bg.addState(new int[0], resting);
         v.setBackground(bg);
         v.setTextColor(new ColorStateList(
                 new int[][] {{android.R.attr.state_focused}, {}},
