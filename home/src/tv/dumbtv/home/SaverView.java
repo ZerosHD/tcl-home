@@ -38,7 +38,11 @@ final class SaverView extends FrameLayout {
     private final ImageView wall;
     private final TextView clock, date, net;
     private final LinearLayout gamesCard, prayerCard, weatherCard;
-    private final TextView games, prayerNames, prayerTimes, degrees, skyText, range;
+    /** Text on the cards that is not highlighted. */
+    private static final int QUIET = 0xCCFFFFFF;
+    private final TextView games, degrees, skyText, range;
+    private final TextView[] prayerName = new TextView[Feed.PRAYER_NAMES.length];
+    private final TextView[] prayerTime = new TextView[Feed.PRAYER_NAMES.length];
     private final WeatherIcon sky;
     private boolean sideShown;
     private final WifiIcon icon;
@@ -105,19 +109,28 @@ final class SaverView extends FrameLayout {
         games.setLineSpacing(Ui.dp(c, 4), 1f);
         gamesCard.addView(games);
 
+        // One row per prayer: the name on the left, the time on the right. Each is its own
+        // single-line view with room for five digits, so a time can never wrap or lose a digit.
         prayerCard = card(c, "Gebetszeiten");
-        LinearLayout columns = new LinearLayout(c);
-        prayerNames = Ui.text(c, 12, 0xCCFFFFFF, Ui.MEDIUM);
-        prayerNames.setLineSpacing(Ui.dp(c, 3), 1f);
-        prayerTimes = Ui.text(c, 12, 0xCCFFFFFF, Ui.MEDIUM);
-        prayerTimes.setLineSpacing(Ui.dp(c, 3), 1f);
-        prayerTimes.setGravity(Gravity.END);
-        columns.addView(prayerNames);
-        LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(
-                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        tl.leftMargin = Ui.dp(c, 16);
-        columns.addView(prayerTimes, tl);
-        prayerCard.addView(columns);
+        for (int i = 0; i < prayerName.length; i++) {
+            LinearLayout line = new LinearLayout(c);
+            prayerName[i] = Ui.text(c, 12, QUIET, Ui.MEDIUM);
+            prayerName[i].setSingleLine(true);
+            prayerName[i].setText(Feed.PRAYER_NAMES[i]);
+            prayerTime[i] = Ui.text(c, 12, QUIET, Ui.MEDIUM);
+            prayerTime[i].setSingleLine(true);
+            prayerTime[i].setGravity(Gravity.END);
+            prayerTime[i].setMinWidth((int) Math.ceil(prayerTime[i].getPaint().measureText("00:00")) + Ui.dp(c, 3));
+            line.addView(prayerName[i], new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
+            LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(
+                    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+            tl.leftMargin = Ui.dp(c, 16);
+            line.addView(prayerTime[i], tl);
+            LinearLayout.LayoutParams ll = new LinearLayout.LayoutParams(
+                    LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+            if (i > 0) ll.topMargin = Ui.dp(c, 3);
+            prayerCard.addView(line, ll);
+        }
 
         weatherCard = card(c, "Wetter");
         weatherCard.setMinimumWidth(Ui.dp(c, 124));
@@ -213,25 +226,12 @@ final class SaverView extends FrameLayout {
             for (int i = times.length - 1; i >= 0; i--) {
                 if (i != 1 && times[i].compareTo(clock24) > 0) next = i;
             }
-            SpannableStringBuilder names = new SpannableStringBuilder();
-            SpannableStringBuilder hours = new SpannableStringBuilder();
             for (int i = 0; i < times.length; i++) {
-                if (i > 0) {
-                    names.append("\n");
-                    hours.append("\n");
-                }
-                int n = names.length(), h = hours.length();
-                names.append(Feed.PRAYER_NAMES[i]);
-                hours.append(times[i]);
-                if (i == next) {
-                    names.setSpan(new ForegroundColorSpan(cfg.accent()), n, names.length(),
-                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    hours.setSpan(new ForegroundColorSpan(cfg.accent()), h, hours.length(),
-                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                }
+                int color = i == next ? cfg.accent() : QUIET;
+                prayerName[i].setTextColor(color);
+                prayerTime[i].setTextColor(color);
+                prayerTime[i].setText(times[i]);
             }
-            prayerNames.setText(names);
-            prayerTimes.setText(hours);
             prayerCard.setVisibility(VISIBLE);
         }
 
