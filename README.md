@@ -128,17 +128,18 @@ den Bedienungshilfe-Dienst „TCL Home Tasten“ (Fernbedienung).
 Unten rechts auf dem Sperrbildschirm stehen bis zu drei Dinge. Alles stellst du am TV
 unter *Optionen* ein:
 
-- **Wetter:** Temperatur und Wetterlage an deinem Ort. Zuerst *Optionen › Ort für Wetter
+- **Wetter:** eine kleine Karte mit Wettersymbol, Temperatur, Wetterlage, Höchst- und
+  Tiefstwert und Regenwahrscheinlichkeit an deinem Ort. Zuerst *Optionen › Ort für Wetter
   und Gebetszeiten* wählen, sonst bleibt die Zeile leer. *Optionen › Wetter* schaltet sie aus.
-- **Gebetszeiten:** Fajr, Shuruq, Dhuhr, Asr, Maghrib und Isha für heute, das nächste
-  Gebet in der Akzentfarbe. Sie werden jeden Tag neu geholt. *Optionen › Gebetszeiten*
+- **Gebetszeiten:** eine Karte links neben dem Wetter mit Fajr, Shuruq, Dhuhr, Asr,
+  Maghrib und Isha für heute untereinander, das nächste Gebet in der Akzentfarbe. Sie werden jeden Tag neu geholt. *Optionen › Gebetszeiten*
   wählt die Berechnungsmethode (Muslim World League, Diyanet, ...) oder *Aus*.
 - **Fußball:** Spiele deiner Vereine: läuft eins, steht dort `LIVE` mit dem Spielstand
   (jede Minute neu), davor Tag und Anstoßzeit, danach das Ergebnis. *Optionen ›
   Fußball-Ligen* und *Fußball-Vereine* legen fest, was erscheint. Voreingestellt sind
   Bundesliga, 2. Bundesliga, DFB-Pokal, Champions League und LaLiga mit Bayern, Dortmund,
   Bielefeld und Real Madrid. *Optionen › Fußball-Ticker*: *Meine Vereine*, *Alle Spiele
-  der Ligen* oder *Aus*. Es erscheinen höchstens fünf Zeilen: Spiele der nächsten vier
+  der Ligen* oder *Aus*. Es erscheinen höchstens fünf Zeilen: Spiele der nächsten acht
   Tage und Ergebnisse der letzten 18 Stunden.
 
 Dein Ort fehlt in der Liste? In `home.conf` eine Zeile `place=Name|Breite|Länge`

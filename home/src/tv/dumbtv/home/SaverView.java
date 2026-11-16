@@ -37,7 +37,9 @@ final class SaverView extends FrameLayout {
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final ImageView wall;
     private final TextView clock, date, net;
-    private final TextView games, prayer, weather;
+    private final LinearLayout gamesCard, prayerCard, weatherCard;
+    private final TextView games, prayerNames, prayerTimes, degrees, skyText, range;
+    private final WeatherIcon sky;
     private boolean sideShown;
     private final WifiIcon icon;
     private Drawable shown;
@@ -92,28 +94,68 @@ final class SaverView extends FrameLayout {
         bl.bottomMargin = Ui.dp(c, 56);
         addView(box, bl);
 
-        // Bottom right: football, prayer times and the weather, each only when there is something.
+        // Bottom right: the football card on top, below it the prayer times and, in the corner,
+        // the weather. Each card only shows when there is something to put in it.
         LinearLayout side = new LinearLayout(c);
         side.setOrientation(LinearLayout.VERTICAL);
         side.setGravity(Gravity.END);
-        games = Ui.text(c, 16, 0xDDFFFFFF, Ui.MEDIUM);
-        games.setGravity(Gravity.END);
+
+        gamesCard = card(c, "Fußball");
+        games = Ui.text(c, 15, 0xDDFFFFFF, Ui.MEDIUM);
         games.setLineSpacing(Ui.dp(c, 6), 1f);
-        prayer = Ui.text(c, 15, 0xBBFFFFFF, Ui.MEDIUM);
-        prayer.setGravity(Gravity.END);
-        prayer.setPadding(0, Ui.dp(c, 16), 0, 0);
-        weather = Ui.text(c, 20, 0xDDFFFFFF, Ui.MEDIUM);
-        weather.setGravity(Gravity.CENTER_VERTICAL);
-        weather.setPadding(0, Ui.dp(c, 14), 0, 0);
-        weather.setCompoundDrawables(new ThermoIcon(Ui.dp(c, 22), 0xDDFFFFFF), null, null, null);
-        weather.setCompoundDrawablePadding(Ui.dp(c, 6));
-        for (TextView v : new TextView[] {games, prayer, weather}) {
-            v.setVisibility(GONE);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            lp.gravity = Gravity.END;
-            side.addView(v, lp);
-        }
+        gamesCard.addView(games);
+
+        prayerCard = card(c, "Gebetszeiten");
+        LinearLayout columns = new LinearLayout(c);
+        prayerNames = Ui.text(c, 15, 0xDDFFFFFF, Ui.MEDIUM);
+        prayerNames.setLineSpacing(Ui.dp(c, 5), 1f);
+        prayerTimes = Ui.text(c, 15, 0xDDFFFFFF, Ui.MEDIUM);
+        prayerTimes.setLineSpacing(Ui.dp(c, 5), 1f);
+        prayerTimes.setGravity(Gravity.END);
+        columns.addView(prayerNames);
+        LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        tl.leftMargin = Ui.dp(c, 22);
+        columns.addView(prayerTimes, tl);
+        prayerCard.addView(columns);
+
+        weatherCard = card(c, "Wetter");
+        weatherCard.setMinimumWidth(Ui.dp(c, 168));
+        LinearLayout top = new LinearLayout(c);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        sky = new WeatherIcon();
+        ImageView picture = new ImageView(c);
+        picture.setImageDrawable(sky);
+        top.addView(picture, new LinearLayout.LayoutParams(Ui.dp(c, 54), Ui.dp(c, 54)));
+        degrees = Ui.text(c, 40, Ui.TEXT, Ui.LIGHT);
+        degrees.setPadding(Ui.dp(c, 12), 0, 0, 0);
+        top.addView(degrees);
+        weatherCard.addView(top);
+        skyText = Ui.text(c, 16, Ui.TEXT, Ui.MEDIUM);
+        skyText.setPadding(0, Ui.dp(c, 8), 0, 0);
+        weatherCard.addView(skyText);
+        range = Ui.text(c, 13, 0xAAFFFFFF, Ui.MEDIUM);
+        range.setLineSpacing(Ui.dp(c, 3), 1f);
+        range.setPadding(0, Ui.dp(c, 5), 0, 0);
+        weatherCard.addView(range);
+
+        LinearLayout.LayoutParams gl = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        gl.gravity = Gravity.END;
+        gl.bottomMargin = Ui.dp(c, 12);
+        side.addView(gamesCard, gl);
+        LinearLayout row = new LinearLayout(c);
+        row.setGravity(Gravity.BOTTOM);
+        row.addView(prayerCard);
+        LinearLayout.LayoutParams wl = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        wl.leftMargin = Ui.dp(c, 12);
+        row.addView(weatherCard, wl);
+        LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        rl.gravity = Gravity.END;
+        side.addView(row, rl);
+
         LayoutParams sr = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM | Gravity.END);
         sr.rightMargin = Ui.dp(c, 64);
@@ -121,51 +163,88 @@ final class SaverView extends FrameLayout {
         addView(side, sr);
     }
 
-    /** Fills the bottom right corner from what {@link Feed} has, and lets it fetch what is due. */
+    /** A translucent dark box with a small heading; hidden until it has content. */
+    private static LinearLayout card(Context c, String title) {
+        LinearLayout v = new LinearLayout(c);
+        v.setOrientation(LinearLayout.VERTICAL);
+        v.setBackground(Ui.round(0x80000000, Ui.dp(c, 14)));
+        v.setPadding(Ui.dp(c, 18), Ui.dp(c, 12), Ui.dp(c, 18), Ui.dp(c, 14));
+        TextView t = Ui.text(c, 11, 0x99FFFFFF, Ui.MEDIUM);
+        t.setLetterSpacing(0.12f);
+        t.setPadding(0, 0, 0, Ui.dp(c, 8));
+        v.addView(t);
+        heading(v, title);
+        v.setVisibility(GONE);
+        return v;
+    }
+
+    private static void heading(LinearLayout card, String title) {
+        ((TextView) card.getChildAt(0)).setText(title.toUpperCase(Locale.GERMAN));
+    }
+
+    /** Fills the cards from what {@link Feed} has, and lets it fetch what is due. */
     private void side(Date now) {
         Context c = getContext();
         Config cfg = Config.get(c);
         Feed feed = Feed.get(c);
         feed.refresh(cfg);
 
-        String w = feed.weather(cfg);
-        weather.setText(w == null ? "" : w);
-        weather.setVisibility(w == null ? GONE : VISIBLE);
+        Feed.Weather w = feed.weather(cfg);
+        if (w == null) {
+            weatherCard.setVisibility(GONE);
+        } else {
+            heading(weatherCard, w.place.substring(0, w.place.indexOf('|')));
+            sky.set(w.code, w.day);
+            degrees.setText(w.temperature + "°");
+            skyText.setText(w.sky());
+            String more = "Max " + w.high + "°   Min " + w.low + "°";
+            if (w.rain >= 0) more += "\nRegenrisiko " + w.rain + " %";
+            range.setText(more);
+            weatherCard.setVisibility(VISIBLE);
+        }
 
         String[] times = feed.prayers(cfg);
         if (times == null) {
-            prayer.setVisibility(GONE);
+            prayerCard.setVisibility(GONE);
         } else {
-            // The next prayer stands out; Shuruq (sunrise) is shown but is not one.
+            // The next prayer stands out; Shuruq (sunrise) is listed but is not one.
             String clock24 = new SimpleDateFormat("HH:mm", Locale.US).format(now);
             int next = 0;
             for (int i = times.length - 1; i >= 0; i--) {
                 if (i != 1 && times[i].compareTo(clock24) > 0) next = i;
             }
-            SpannableStringBuilder s = new SpannableStringBuilder();
+            SpannableStringBuilder names = new SpannableStringBuilder();
+            SpannableStringBuilder hours = new SpannableStringBuilder();
             for (int i = 0; i < times.length; i++) {
-                if (i > 0) s.append("     ");
-                int from = s.length();
-                s.append(Feed.PRAYER_NAMES[i]).append(" ").append(times[i]);
+                if (i > 0) {
+                    names.append("\n");
+                    hours.append("\n");
+                }
+                int n = names.length(), h = hours.length();
+                names.append(Feed.PRAYER_NAMES[i]);
+                hours.append(times[i]);
                 if (i == next) {
-                    s.setSpan(new ForegroundColorSpan(cfg.accent()), from, s.length(),
+                    names.setSpan(new ForegroundColorSpan(cfg.accent()), n, names.length(),
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    hours.setSpan(new ForegroundColorSpan(cfg.accent()), h, hours.length(),
                             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
             }
-            prayer.setText(s);
-            prayer.setVisibility(VISIBLE);
+            prayerNames.setText(names);
+            prayerTimes.setText(hours);
+            prayerCard.setVisibility(VISIBLE);
         }
 
         List<Feed.Match> matches = feed.matches(cfg);
         if (matches.isEmpty()) {
-            games.setVisibility(GONE);
+            gamesCard.setVisibility(GONE);
             return;
         }
         long ms = now.getTime();
-        SimpleDateFormat day = new SimpleDateFormat("EE", Locale.GERMAN);
+        SimpleDateFormat day = new SimpleDateFormat("EE dd.MM.", Locale.GERMAN);
         SimpleDateFormat hour = new SimpleDateFormat("HH:mm", Locale.GERMAN);
-        String today = new SimpleDateFormat("yyyyMMdd", Locale.US).format(now);
         SimpleDateFormat stamp = new SimpleDateFormat("yyyyMMdd", Locale.US);
+        String today = stamp.format(now);
         SpannableStringBuilder s = new SpannableStringBuilder();
         for (Feed.Match m : matches) {
             if (s.length() > 0) s.append("\n");
@@ -188,7 +267,7 @@ final class SaverView extends FrameLayout {
             }
         }
         games.setText(s);
-        games.setVisibility(VISIBLE);
+        gamesCard.setVisibility(VISIBLE);
     }
 
     void start() {

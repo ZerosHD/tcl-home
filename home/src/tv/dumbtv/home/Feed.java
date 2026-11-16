@@ -94,7 +94,7 @@ final class Feed {
     private static final long RETRY = 2 * MINUTE;
     /** A match counts as running for this long after kick-off unless the data says it is over. */
     private static final long LIVE_FOR = 3 * HOUR;
-    private static final long AHEAD = 4 * 24 * HOUR, BEHIND = 18 * HOUR;
+    private static final long AHEAD = 8 * 24 * HOUR, BEHIND = 18 * HOUR;
     private static final int MAX_LINES = 5;
 
     static final class Match {
@@ -121,10 +121,30 @@ final class Feed {
     private final Map<String, Long> tried = new HashMap<>();
     private final Map<String, List<Match>> byLeague = new ConcurrentHashMap<>();
 
-    private volatile String weatherPlace = "";
-    private volatile double temperature;
-    private volatile int weatherCode;
-    private volatile long weatherAt;
+    /** One reading: now, and today's range. Immutable, so the lock screen can read it from its own thread. */
+    static final class Weather {
+        final String place;
+        final int temperature, code, high, low, rain;
+        final boolean day;
+        final long at;
+
+        Weather(String place, int temperature, int code, boolean day, int high, int low, int rain, long at) {
+            this.place = place;
+            this.temperature = temperature;
+            this.code = code;
+            this.day = day;
+            this.high = high;
+            this.low = low;
+            this.rain = rain;
+            this.at = at;
+        }
+
+        String sky() {
+            return Feed.sky(code);
+        }
+    }
+
+    private volatile Weather weather;
     private volatile String prayerKey = "";
     private volatile String[] prayers;
 
@@ -137,12 +157,10 @@ final class Feed {
         app = c;
         store = c.getSharedPreferences("feed", Context.MODE_PRIVATE);
         try {
-            String[] w = store.getString("weather", "").split("\n");
-            if (w.length == 4) {
-                temperature = Double.parseDouble(w[1]);
-                weatherCode = Integer.parseInt(w[2]);
-                weatherAt = Long.parseLong(w[3]);
-                weatherPlace = w[0];
+            String[] w = store.getString("weather2", "").split("\n");
+            if (w.length == 8) {
+                weather = new Weather(w[0], Integer.parseInt(w[1]), Integer.parseInt(w[2]), "1".equals(w[3]),
+                        Integer.parseInt(w[4]), Integer.parseInt(w[5]), Integer.parseInt(w[6]), Long.parseLong(w[7]));
             }
         } catch (NumberFormatException ignored) {
             // an unreadable cache is simply fetched again
@@ -196,13 +214,13 @@ final class Feed {
 
     // ---------------------------------------------------------------- what the lock screen shows
 
-    /** "7 °C  Bedeckt", or null when the weather is off, has no town or is too old to trust. */
-    String weather(Config cfg) {
-        String[] place = place(cfg);
-        if (place == null || !"on".equals(cfg.get(Config.WEATHER))) return null;
-        if (!cfg.get(KEY_PLACE, "").equals(weatherPlace)) return null;
-        if (System.currentTimeMillis() - weatherAt > WEATHER_STALE) return null;
-        return Math.round(temperature) + " °C  " + sky(weatherCode);
+    /** The weather for the picked town, or null when it is off, has no town or is too old to trust. */
+    Weather weather(Config cfg) {
+        Weather w = weather;
+        if (w == null || place(cfg) == null || !"on".equals(cfg.get(Config.WEATHER))) return null;
+        if (!cfg.get(KEY_PLACE, "").equals(w.place)) return null;
+        if (System.currentTimeMillis() - w.at > WEATHER_STALE) return null;
+        return w;
     }
 
     /** Today's six times as HH:mm in the order of {@link #PRAYER_NAMES}, or null. */
@@ -264,8 +282,9 @@ final class Feed {
         final String[] place = place(cfg);
         final String placeKey = cfg.get(KEY_PLACE, "");
 
+        Weather had = weather;
         if (place != null && "on".equals(cfg.get(Config.WEATHER))
-                && (!placeKey.equals(weatherPlace) || now - weatherAt > WEATHER_EVERY)
+                && (had == null || !placeKey.equals(had.place) || now - had.at > WEATHER_EVERY)
                 && due("weather", RETRY)) {
             io.execute(new Runnable() {
                 @Override
@@ -335,15 +354,24 @@ final class Feed {
 
     private void fetchWeather(String[] place, String placeKey) {
         try {
-            JSONObject now = new JSONObject(http("https://api.open-meteo.com/v1/forecast?latitude="
+            JSONObject all = new JSONObject(http("https://api.open-meteo.com/v1/forecast?latitude="
                     + place[1] + "&longitude=" + place[2]
-                    + "&current=temperature_2m,weather_code&timezone=auto")).getJSONObject("current");
-            temperature = now.getDouble("temperature_2m");
-            weatherCode = now.getInt("weather_code");
-            weatherAt = System.currentTimeMillis();
-            weatherPlace = placeKey;
-            store.edit().putString("weather", placeKey + "\n" + temperature + "\n" + weatherCode
-                    + "\n" + weatherAt).apply();
+                    + "&current=temperature_2m,weather_code,is_day"
+                    + "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+                    + "&forecast_days=1&timezone=auto"));
+            JSONObject now = all.getJSONObject("current"), day = all.getJSONObject("daily");
+            Weather w = new Weather(placeKey,
+                    (int) Math.round(now.getDouble("temperature_2m")),
+                    now.getInt("weather_code"),
+                    now.optInt("is_day", 1) == 1,
+                    (int) Math.round(day.getJSONArray("temperature_2m_max").getDouble(0)),
+                    (int) Math.round(day.getJSONArray("temperature_2m_min").getDouble(0)),
+                    // the chance of rain is missing for some places; -1 hides it
+                    (int) Math.round(day.getJSONArray("precipitation_probability_max").optDouble(0, -1)),
+                    System.currentTimeMillis());
+            weather = w;
+            store.edit().putString("weather2", w.place + "\n" + w.temperature + "\n" + w.code + "\n"
+                    + (w.day ? "1" : "0") + "\n" + w.high + "\n" + w.low + "\n" + w.rain + "\n" + w.at).apply();
         } catch (IOException | JSONException | RuntimeException e) {
             Log.w("dumbtv", "weather: " + e);
         }
@@ -506,7 +534,7 @@ final class Feed {
     }
 
     /** WMO weather codes, as open-meteo reports them. */
-    private static String sky(int code) {
+    static String sky(int code) {
         switch (code) {
             case 0: return "Klar";
             case 1: return "Überwiegend klar";
