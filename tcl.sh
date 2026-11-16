@@ -542,7 +542,8 @@ fetch_earth() {
   printf '\n'
 }
 
-# Paintings from the Metropolitan Museum of Art's open-access collection (public domain, CC0).
+# Paintings from the Metropolitan Museum of Art's open-access collection (public domain, CC0),
+# from its department of European paintings: the wider search also returns prints and drawings.
 # Only pictures clearly wider than tall are taken, so a TV shows them without cutting half away.
 MET=https://collectionapi.metmuseum.org/public/collection
 fetch_art() {
@@ -554,13 +555,13 @@ fetch_art() {
     tries=$((tries + 1))
     topic=${topics[RANDOM % ${#topics[@]}]}
     json=$(curl -fsSL --connect-timeout 15 \
-      "$MET/v1.1/search?hasImages=true&isPublicDomain=true&medium=Paintings&q=$topic&limit=1&offset=0" 2>/dev/null) || continue
+      "$MET/v1.1/search?hasImages=true&isPublicDomain=true&departmentId=11&q=$topic&limit=1&offset=0" 2>/dev/null) || continue
     total=$(printf '%s' "$json" | sed -n 's/.*"total": *\([0-9]*\).*/\1/p')
     [[ -n $total && $total -gt 0 ]] || continue
     offset=0
     [[ $total -gt 40 ]] && offset=$((RANDOM % (total - 40)))
     ids=$(curl -fsSL --connect-timeout 15 \
-      "$MET/v1.1/search?hasImages=true&isPublicDomain=true&medium=Paintings&q=$topic&limit=40&offset=$offset" 2>/dev/null \
+      "$MET/v1.1/search?hasImages=true&isPublicDomain=true&departmentId=11&q=$topic&limit=40&offset=$offset" 2>/dev/null \
       | sed -n 's/.*"objectIDs": *\[\([^]]*\)\].*/\1/p' | tr ',' '\n' | tr -d ' ')
     for id in $ids; do
       [[ $have -lt $want ]] || break
@@ -595,8 +596,8 @@ COMMONS=https://commons.wikimedia.org/w/api.php
 COMMONS_UA="tcl-home-wallpapers/1.0 (personal TV wallpaper script)"
 fetch_sights() {
   local dir=$1 want=$2 have tries=0 cat letter page id w h url f
-  local cats=("Featured pictures of buildings" "Featured pictures of castles" "Featured pictures of bridges"
-              "Featured pictures of cityscapes" "Featured pictures of skylines" "Featured pictures of architecture")
+  local cats=("Featured pictures of castles" "Featured pictures of bridges"
+              "Featured pictures of cityscapes" "Featured pictures of skylines")
   local letters=ABCDEFGHIJKLMNOPRSTUVW
   have=$(ls "$dir"/ort-*.jpg 2>/dev/null | wc -l | tr -d ' ')
   note "lade Fotos von Sehenswürdigkeiten (Wikimedia Commons, ausgezeichnete Bilder) nach $dir/"
