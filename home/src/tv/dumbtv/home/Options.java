@@ -64,7 +64,8 @@ public final class Options extends Activity {
         }
 
         LinearLayout wall = section(list, "Hintergrund");
-        for (Config.Choice c : new Config.Choice[] {Config.BACKGROUND, Config.DIM, Config.ROTATE}) {
+        for (Config.Choice c : new Config.Choice[] {Config.BACKGROUND, Config.DIM, Config.ROTATE,
+                Config.GALLERY}) {
             wall.addView(choice(c));
         }
         wall.addView(action("Nächstes Hintergrundbild", () -> {
@@ -103,8 +104,8 @@ public final class Options extends Activity {
                 + "\nEin Hintergrundbild: als wallpaper.jpg (oder .png) in diesen Ordner legen"
                 + "\nMehrere Bilder: in den Ordner " + Config.WALLPAPERS + "/ legen und einen Bildwechsel wählen"
                 + "\nDanach Hintergrund \u203A Bild oder Bild mit App-Farbton wählen"
-                + "\nInternet nur für den Sperrbildschirm: Wetter (open-meteo.com), Gebetszeiten"
-                + " (aladhan.com), Fußball (espn.com)"
+                + "\nInternet nur für Wetter (open-meteo.com), Gebetszeiten (aladhan.com), Fußball"
+                + " (espn.com) und neue Hintergrundbilder (Google Earth View, Wikimedia Commons, Met Museum)"
                 + "\nKein Tracking, keine Werbung, kein Konto.");
         list.addView(about, new LinearLayout.LayoutParams(dp(WIDTH), WRAP));
 

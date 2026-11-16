@@ -211,6 +211,10 @@ weniger Bilder: `tcl hintergruende 60`.
 - **Eigene Sammlung:** Bilder in einen Ordner legen, dann `tcl hintergruende C:\Pfad\zum\Ordner`.
   Bilder, die dir nicht gefallen, löschst du aus `hintergruende\` und rufst
   `tcl hintergruende hintergruende` auf.
+- **Von selbst frisch:** Der TV holt sich täglich drei neue Bilder (ein Satellitenfoto, eine
+  Sehenswürdigkeit, ein Gemälde) und löscht die ältesten, sodass es bei 36 bleibt. Eigene
+  Bilder mit anderen Dateinamen bleiben unberührt. *Optionen › Neue Bilder laden*: täglich,
+  wöchentlich oder aus.
 - **Wechsel ändern:** am TV *Optionen › Bildwechsel* (jede Rückkehr, stündlich,
   täglich, nach Tageszeit). *Optionen › Nächstes Hintergrundbild* springt sofort weiter.
   Oder beim Laden: `set ROTATE=daily` (CMD) vor dem Befehl.

@@ -261,6 +261,7 @@ public final class Home extends Activity {
         registerReceiver(time, f);
         tick();
         openPending();
+        Gallery.get(this).refresh(cfg);
         if (content != null) {
             // A short rise and fade, so the home screen arrives instead of snapping in.
             content.animate().cancel();

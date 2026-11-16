@@ -202,6 +202,7 @@ final class SaverView extends FrameLayout {
         Config cfg = Config.get(c);
         Feed feed = Feed.get(c);
         feed.refresh(cfg);
+        Gallery.get(c).refresh(cfg);
 
         Feed.Weather w = feed.weather(cfg);
         if (w == null) {

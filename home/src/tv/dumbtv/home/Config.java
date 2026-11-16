@@ -137,7 +137,11 @@ final class Config {
     static final Choice FOOTBALL = new Choice("football", "Fußball-Ticker", "all",
             new String[] {"off", "clubs", "all"},
             new String[] {"Aus", "Nur meine Vereine", "Meine Vereine + Heute"});
-    static final Choice[] CHOICES = {ACCENT, FOCUS, DOCK, TILES, LAYOUT, ORDER, LABELS, CLOCK, MEMORY, INPUTS, SWITCH, BACKGROUND, DIM, ROTATE, BACK, SAVER, LOCK, TILE_STYLE, WEATHER, PRAYER, FOOTBALL};
+    /** {@link Gallery} fetches new wallpapers by itself and drops the oldest. */
+    static final Choice GALLERY = new Choice("gallery", "Neue Bilder laden", "daily",
+            new String[] {"off", "daily", "weekly"},
+            new String[] {"Aus", "Täglich 3 neue", "Wöchentlich 9 neue"});
+    static final Choice[] CHOICES = {ACCENT, FOCUS, DOCK, TILES, LAYOUT, ORDER, LABELS, CLOCK, MEMORY, INPUTS, SWITCH, BACKGROUND, DIM, ROTATE, BACK, SAVER, LOCK, TILE_STYLE, WEATHER, PRAYER, FOOTBALL, GALLERY};
 
     /** Folder of wallpapers, next to home.conf, that Background › Image file rotates through. */
     static final String WALLPAPERS = "wallpapers";
@@ -392,6 +396,10 @@ final class Config {
         Collections.sort(out, new Comparator<File>() {
             @Override
             public int compare(File a, File b) {
+                // A fixed shuffle: by a hash of the name, so pictures of one kind (erde-, ort-,
+                // kunst-) take turns instead of coming a dozen in a row as their names sort.
+                int mixed = Integer.compare(mix(a.getName()), mix(b.getName()));
+                if (mixed != 0) return mixed;
                 int byName = a.getName().compareToIgnoreCase(b.getName());
                 return byName != 0 ? byName : a.getPath().compareTo(b.getPath());
             }
@@ -409,6 +417,16 @@ final class Config {
                 out.add(f);
             }
         }
+    }
+
+    private static int mix(String name) {
+        int h = name.toLowerCase(Locale.ROOT).hashCode() * 0x9E3779B1;
+        return h ^ (h >>> 15);
+    }
+
+    /** Where fetched wallpapers go: the media folder adb also writes to, else the app's own. */
+    File wallpaperDir() {
+        return new File(shared != null ? shared : dir, WALLPAPERS);
     }
 
     File wallpaper() {
