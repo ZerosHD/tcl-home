@@ -134,11 +134,12 @@ unter *Optionen* ein:
 - **Gebetszeiten:** eine Karte links neben dem Wetter mit Fajr, Shuruq, Dhuhr, Asr,
   Maghrib und Isha für heute untereinander, das nächste Gebet in der Akzentfarbe. Sie werden jeden Tag neu geholt. *Optionen › Gebetszeiten*
   wählt die Berechnungsmethode (Muslim World League, Diyanet, ...) oder *Aus*.
-- **Fußball:** oben in der Karte stehen immer die Spiele deiner Vereine, ihr Name in der
-  Akzentfarbe: vor dem Spiel Tag und Anstoßzeit (bis acht Tage voraus), während des Spiels
-  die Spielminute und der Stand (jede Minute neu), danach das Ergebnis. Große Derbys von
-  heute stehen ebenfalls oben und tragen die Marke `DERBY`. Darunter blättert die Karte
-  alle zehn Sekunden durch die Spiele von heute, eine Liga nach der anderen.
+- **Fußball:** die Karte wechselt alle zehn Sekunden die Seite. Zuerst *Meine Vereine*:
+  die Spiele deiner Vereine, ihr Name in der Akzentfarbe, vor dem Spiel mit Tag und
+  Anstoßzeit (bis acht Tage voraus), während des Spiels mit Spielminute und Stand (jede
+  Minute neu), danach mit dem Ergebnis. Große Derbys stehen ebenfalls dort und tragen die
+  Marke `DERBY`. Danach folgt je Liga eine Seite mit den Spielen von heute oder, an einem
+  Tag ohne Spiele, mit dem nächsten Spieltag der Liga.
   *Optionen › Fußball-Vereine* wählt deine Vereine (voreingestellt: Bielefeld, Dortmund,
   Bayern, Real Madrid, Galatasaray, Bournemouth), *Optionen › Fußball-Ligen* die Ligen für
   „Heute“ (voreingestellt: Bundesliga, 2. Bundesliga, Premier League, LaLiga, Süper Lig,

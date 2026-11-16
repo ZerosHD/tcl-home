@@ -80,10 +80,11 @@ final class Soccer {
 
     private static final long MINUTE = 60_000L, HOUR = 60 * MINUTE;
     private static final long FIXTURES_EVERY = 30 * MINUTE, DAY_EVERY = 10 * MINUTE, LIVE_EVERY = MINUTE;
+    private static final long NEXT_EVERY = 60 * MINUTE;
     /** How far ahead a favourite's next match is announced. */
     private static final long AHEAD = 8 * 24 * HOUR;
     private static final long AROUND = 3 * HOUR;
-    private static final int TOP_LINES = 4, PAGE_LINES = 6, FIXTURES_KEPT = 3;
+    private static final int TOP_LINES = 6, PAGE_LINES = 6, FIXTURES_KEPT = 3;
 
     static final class Match {
         String id = "", league = "", state = "pre", clock = "";
@@ -105,14 +106,20 @@ final class Soccer {
         }
     }
 
-    /** One league's matches of today, or a part of them when they do not fit one page. */
+    /**
+     * One screenful of the football card: the favourite clubs' matches, or one league's matches
+     * of a day (a part of them when they do not fit). {@code withDay} asks for the day in front
+     * of each kick-off time, for a page whose matches are on different days.
+     */
     static final class Page {
         final String title;
         final List<Match> matches;
+        final boolean withDay;
 
-        Page(String title, List<Match> matches) {
+        Page(String title, List<Match> matches, boolean withDay) {
             this.title = title;
             this.matches = matches;
+            this.withDay = withDay;
         }
     }
 
@@ -135,6 +142,8 @@ final class Soccer {
     private final Map<String, Long> tried = new HashMap<>();
     /** League slug to its matches of one day. */
     private final Map<String, Day> days = new ConcurrentHashMap<>();
+    /** League slug to its next day of matches, shown while there is none today. */
+    private final Map<String, Day> upcoming = new ConcurrentHashMap<>();
     /** Club id to its next fixtures. */
     private final Map<String, List<Match>> fixtures = new ConcurrentHashMap<>();
 
@@ -152,6 +161,9 @@ final class Soccer {
                 if (key.startsWith("day.")) {
                     JSONObject o = new JSONObject(String.valueOf(e.getValue()));
                     days.put(key.substring(4), new Day(o.getString("d"), decode(o.getJSONArray("m"))));
+                } else if (key.startsWith("next.")) {
+                    JSONObject o = new JSONObject(String.valueOf(e.getValue()));
+                    upcoming.put(key.substring(5), new Day(o.getString("d"), decode(o.getJSONArray("m"))));
                 } else if (key.startsWith("club.")) {
                     fixtures.put(key.substring(5), decode(new JSONArray(String.valueOf(e.getValue()))));
                 }
@@ -190,8 +202,8 @@ final class Soccer {
     // ---------------------------------------------------------------- what the lock screen shows
 
     /**
-     * The lines that always show: matches of the favourite clubs, today's and the next ones,
-     * plus any derby played today. Running matches first, then by kick-off.
+     * The first page: matches of the favourite clubs, today's and the next ones, plus any
+     * derby today or coming up. Running matches first, then by kick-off.
      */
     List<Match> top(Config cfg) {
         List<Match> out = new ArrayList<>();
@@ -216,6 +228,13 @@ final class Soccer {
                 byId.put(m.id, m);
             }
         }
+        for (Day d : upcoming.values()) {
+            for (Match m : d.matches) {
+                if (!m.derby || byId.containsKey(m.id)) continue;
+                if (m.kickoff < now - AROUND || m.kickoff - now > AHEAD) continue;
+                byId.put(m.id, m);
+            }
+        }
         out.addAll(byId.values());
         Collections.sort(out, new Comparator<Match>() {
             @Override
@@ -232,14 +251,32 @@ final class Soccer {
         return m.live() ? 0 : m.over() ? 2 : 1;
     }
 
-    /** Today's matches of the chosen leagues, a page per league; the lock screen leafs through them. */
+    /**
+     * What the card leafs through: first the favourite clubs, then one page per chosen league
+     * with today's matches or, on a day without any, the league's next day of matches.
+     */
     List<Page> pages(Config cfg) {
         List<Page> out = new ArrayList<>();
-        if (!"all".equals(cfg.get(Config.FOOTBALL))) return out;
-        String date = date(System.currentTimeMillis());
+        String mode = cfg.get(Config.FOOTBALL);
+        if ("off".equals(mode)) return out;
+        List<Match> mine = top(cfg);
+        if (!mine.isEmpty()) out.add(new Page("Meine Vereine", mine, true));
+        if (!"all".equals(mode)) return out;
+        long now = System.currentTimeMillis();
+        String date = date(now);
         for (String league : leagues(cfg)) {
             Day d = days.get(league);
-            if (d == null || !date.equals(d.date) || d.matches.isEmpty()) continue;
+            String when = "Heute";
+            if (d == null || !date.equals(d.date) || d.matches.isEmpty()) {
+                d = upcoming.get(league);
+                if (d == null || d.matches.isEmpty()) continue;
+                long first = Long.MAX_VALUE;
+                for (Match m : d.matches) first = Math.min(first, m.kickoff);
+                // yesterday's results, or a matchday too far away to care about yet
+                if (first < now - AROUND || first - now > AHEAD) continue;
+                when = date.equals(date(first)) ? "Heute"
+                        : new SimpleDateFormat("EE dd.MM.", Locale.GERMAN).format(new Date(first));
+            }
             List<Match> all = new ArrayList<>(d.matches);
             Collections.sort(all, new Comparator<Match>() {
                 @Override
@@ -249,9 +286,8 @@ final class Soccer {
             });
             int parts = (all.size() + PAGE_LINES - 1) / PAGE_LINES;
             for (int p = 0; p < parts; p++) {
-                String title = leagueName(league) + (parts > 1 ? "  " + (p + 1) + "/" + parts : "");
-                out.add(new Page(title, new ArrayList<>(
-                        all.subList(p * PAGE_LINES, Math.min(all.size(), (p + 1) * PAGE_LINES)))));
+                out.add(new Page(leagueName(league) + " \u00B7 " + when, new ArrayList<>(
+                        all.subList(p * PAGE_LINES, Math.min(all.size(), (p + 1) * PAGE_LINES))), false));
             }
         }
         return out;
@@ -275,6 +311,18 @@ final class Soccer {
                     fetchFixtures(club);
                 }
             });
+        }
+
+        if ("all".equals(mode)) {
+            for (final String league : leagues(cfg)) {
+                if (!due("next." + league, NEXT_EVERY)) continue;
+                io.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        fetchNext(league);
+                    }
+                });
+            }
         }
 
         // Today's list is wanted for the chosen leagues and for any competition a favourite plays in today.
@@ -367,6 +415,26 @@ final class Soccer {
             store.edit().putString("day." + league, o.toString()).apply();
         } catch (IOException | JSONException | ParseException | RuntimeException e) {
             Log.w("dumbtv", "football " + league + ": " + e);
+        }
+    }
+
+    /** Without a date the scoreboard answers with the league's current or next day of matches. */
+    private void fetchNext(String league) {
+        try {
+            JSONArray events = new JSONObject(Feed.http(BASE + Feed.encode(league) + "/scoreboard"))
+                    .optJSONArray("events");
+            List<Match> all = new ArrayList<>();
+            for (int i = 0; events != null && i < events.length(); i++) {
+                all.add(parse(events.getJSONObject(i), league));
+            }
+            String date = all.isEmpty() ? "" : date(all.get(0).kickoff);
+            upcoming.put(league, new Day(date, all));
+            JSONObject o = new JSONObject();
+            o.put("d", date);
+            o.put("m", encode(all));
+            store.edit().putString("next." + league, o.toString()).apply();
+        } catch (IOException | JSONException | ParseException | RuntimeException e) {
+            Log.w("dumbtv", "football next " + league + ": " + e);
         }
     }
 

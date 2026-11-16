@@ -40,7 +40,7 @@ final class SaverView extends FrameLayout {
     private final LinearLayout gamesCard, prayerCard, weatherCard;
     /** Text on the cards that is not highlighted. */
     private static final int QUIET = 0xCCFFFFFF;
-    private final TextView games, pageTitle, pageLines, degrees, skyText, range;
+    private final TextView games, degrees, skyText, range;
     private final TextView[] prayerName = new TextView[Feed.PRAYER_NAMES.length];
     private final TextView[] prayerTime = new TextView[Feed.PRAYER_NAMES.length];
     private final WeatherIcon sky;
@@ -108,13 +108,7 @@ final class SaverView extends FrameLayout {
         games = Ui.text(c, 12, QUIET, Ui.MEDIUM);
         games.setLineSpacing(Ui.dp(c, 4), 1f);
         gamesCard.addView(games);
-        pageTitle = Ui.text(c, 9, 0x80FFFFFF, Ui.MEDIUM);
-        pageTitle.setLetterSpacing(0.12f);
-        gamesCard.addView(pageTitle);
-        pageLines = Ui.text(c, 12, QUIET, Ui.MEDIUM);
-        pageLines.setLineSpacing(Ui.dp(c, 4), 1f);
-        pageLines.setPadding(0, Ui.dp(c, 5), 0, 0);
-        gamesCard.addView(pageLines);
+        gamesCard.setMinimumWidth(Ui.dp(c, 250));
 
         // One row per prayer: the name on the left, the time on the right. Each is its own
         // single-line view with room for five digits, so a time can never wrap or lose a digit.
@@ -244,34 +238,19 @@ final class SaverView extends FrameLayout {
 
         Soccer soccer = Soccer.get(c);
         soccer.refresh(cfg);
-        List<Soccer.Match> top = soccer.top(cfg);
         List<Soccer.Page> pages = soccer.pages(cfg);
-        if (top.isEmpty() && pages.isEmpty()) {
+        if (pages.isEmpty()) {
             gamesCard.setVisibility(GONE);
             return;
         }
+        // One page at a time, the next one every ten seconds: my clubs, then league by league.
+        int at = (int) (now.getTime() / 10_000 % pages.size());
+        Soccer.Page page = pages.get(at);
+        heading(gamesCard, page.title + (pages.size() > 1 ? "   " + (at + 1) + "/" + pages.size() : ""));
         List<String> clubs = Soccer.clubs(cfg);
-        int accent = cfg.accent();
-
         SpannableStringBuilder s = new SpannableStringBuilder();
-        for (Soccer.Match m : top) line(s, m, clubs, accent, now, true);
+        for (Soccer.Match m : page.matches) line(s, m, clubs, cfg.accent(), now, page.withDay);
         games.setText(s);
-        games.setVisibility(top.isEmpty() ? GONE : VISIBLE);
-
-        if (pages.isEmpty()) {
-            pageTitle.setVisibility(GONE);
-            pageLines.setVisibility(GONE);
-        } else {
-            // One league at a time, the next one every ten seconds.
-            Soccer.Page page = pages.get((int) (now.getTime() / 10_000 % pages.size()));
-            pageTitle.setText(("Heute · " + page.title).toUpperCase(Locale.GERMAN));
-            pageTitle.setPadding(0, top.isEmpty() ? 0 : Ui.dp(c, 9), 0, 0);
-            SpannableStringBuilder p = new SpannableStringBuilder();
-            for (Soccer.Match m : page.matches) line(p, m, clubs, accent, now, false);
-            pageLines.setText(p);
-            pageTitle.setVisibility(VISIBLE);
-            pageLines.setVisibility(VISIBLE);
-        }
         gamesCard.setVisibility(VISIBLE);
     }
 
