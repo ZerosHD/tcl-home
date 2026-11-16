@@ -608,8 +608,10 @@ public final class Home extends Activity {
         LinearLayout lines = new LinearLayout(this);
         lines.setOrientation(LinearLayout.VERTICAL);
         date = Ui.text(this, 14, 0xE6FFFFFF, Ui.MEDIUM);
+        date.setPadding(dp(3), 0, 0, 0);
         net = Ui.text(this, 12, Ui.MUTED, Ui.MEDIUM);
-        net.setPadding(0, dp(5), 0, 0);
+        // The Wi-Fi fan is a little wider than its box; the padding gives its left arc room.
+        net.setPadding(dp(3), dp(5), 0, 0);
         net.setGravity(Gravity.CENTER_VERTICAL);
         netIcon = new WifiIcon(dp(13), Ui.MUTED);
         net.setCompoundDrawables(netIcon, null, null, null);
