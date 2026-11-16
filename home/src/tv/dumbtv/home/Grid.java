@@ -30,7 +30,7 @@ final class Grid extends ViewGroup {
         super(c);
         this.mayDock = mayDock;
         dockPad = Ui.dp(c, 12);
-        dockGap = Ui.dp(c, 12);
+        dockGap = Ui.dp(c, 20);
         dockRadius = Ui.dp(c, 24);
         panel.setColor(0x26FFFFFF);
         panelEdge.setStyle(Paint.Style.STROKE);
@@ -99,7 +99,7 @@ final class Grid extends ViewGroup {
             int inRow = Math.min(n, cols);
             dockArea.set(getPaddingLeft() - dockPad, Math.max(0, getPaddingTop() - dockPad),
                     getPaddingLeft() + inRow * cw + (inRow - 1) * hGap + dockPad,
-                    getPaddingTop() + ch + dockPad / 4f);
+                    getPaddingTop() + ch + dockPad * 0.9f);
         }
         for (int i = 0; i < n; i++) {
             int col = i % cols, row = i / cols;

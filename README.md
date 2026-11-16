@@ -101,9 +101,11 @@ TCL-Systemdienste. Eine App, die du doch willst, kommentierst du in der Liste mi
   (z. B. ein Browser). TCL-eigene Apps sind ausgeblendet. Unter *Optionen › Apps on home screen*
   blendest du jede App ein oder aus, auch den Play Store.
 - Halte OK auf einer Kachel zum Verschieben, Umbenennen oder Ausblenden.
-- Die markierte Kachel leuchtet in der Akzentfarbe. *Optionen › Accent color* wählt die
-  Farbe (zehn zur Auswahl), *Optionen › Fokus-Stil* schaltet zwischen *Leuchten* und
-  *Nur Rahmen* um.
+- Die markierte Kachel hebt sich an: sie wird größer, bekommt einen weichen Schatten, einen
+  Lichtschein und eine helle Kante. *Optionen › Fokus-Stil* bietet außerdem *Leuchten* und
+  *Nur Rahmen* in der Akzentfarbe (*Optionen › Accent color*, zehn Farben).
+- Die erste Reihe liegt auf einem Dock, einer halb durchsichtigen Leiste für deine
+  wichtigsten Apps. *Optionen › Dock (erste Reihe)* schaltet es aus.
 - Keine Werbung, keine Vorschläge, kein Konto. Ins Internet geht die App nur für den
   Sperrbildschirm (Wetter, Gebetszeiten, Fußball), siehe unten.
 

@@ -75,7 +75,7 @@ final class Tile extends View {
         // Drawn under the card, so only the blurred shadow around it shows.
         shadow.setColor(0xFF0B0C0E);
         shadow.setShadowLayer(Ui.dp(c, 18), 0, Ui.dp(c, 10), 0xB8000000);
-        rest.setColor(0x30000000);
+        rest.setColor(0x22000000);
         rim.setStyle(Paint.Style.STROKE);
         rim.setStrokeWidth(Ui.dp(c, 1.5f));
         rim.setColor(0xE6FFFFFF);
