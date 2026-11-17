@@ -212,7 +212,7 @@ final class SaverView extends FrameLayout {
         Card(Context c) {
             card = new LinearLayout(c);
             card.setOrientation(LinearLayout.VERTICAL);
-            android.graphics.drawable.GradientDrawable glass = Ui.round(0x59000000, Ui.dp(c, 16));
+            android.graphics.drawable.GradientDrawable glass = Ui.round(0x73000000, Ui.dp(c, 16));
             glass.setStroke(Math.max(1, Ui.dp(c, 0.5f)), 0x1FFFFFFF);
             card.setBackground(glass);
             card.setPadding(Ui.dp(c, 16), Ui.dp(c, 13), Ui.dp(c, 16), Ui.dp(c, 14));
@@ -361,10 +361,13 @@ final class SaverView extends FrameLayout {
         games.title.setText(page.title.toUpperCase(Locale.GERMAN));
         games.note.setText(pages.size() > 1 ? (at + 1) + " / " + pages.size() : "");
         List<String> clubs = Soccer.clubs(cfg);
+        // The card keeps the height of its fullest page, so the panel does not jump as pages turn.
+        int tallest = 0;
+        for (Soccer.Page p : pages) tallest = Math.max(tallest, Math.min(gameRows.length, p.matches.size()));
         for (int i = 0; i < gameRows.length; i++) {
             GameRow r = gameRows[i];
             if (i >= page.matches.size()) {
-                r.row.setVisibility(GONE);
+                r.row.setVisibility(i < tallest ? INVISIBLE : GONE);
                 continue;
             }
             fill(r, page.matches.get(i), clubs, accent, now, page.withDay);
