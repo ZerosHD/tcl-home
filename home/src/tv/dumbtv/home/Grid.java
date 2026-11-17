@@ -94,16 +94,22 @@ final class Grid extends ViewGroup {
         int cw = first.getMeasuredWidth(), ch = first.getMeasuredHeight();
         int avail = Math.max(0, (r - l) - getPaddingLeft() - getPaddingRight());
         int cols = columns(avail, cw);
+        // The width left over after the last column goes into the gaps, so a full row ends flush
+        // with the top bar on both sides instead of leaving a wide margin on the right. Each gap
+        // grows by at most one normal gap; beyond that the row is centred.
+        int gap = hGap;
+        if (cols > 1) gap += Math.min(hGap, (avail - cols * cw - (cols - 1) * hGap) / (cols - 1));
+        int left = getPaddingLeft() + Math.max(0, (avail - cols * cw - (cols - 1) * gap) / 2);
         boolean docked = dock();
         if (docked) {
             int inRow = Math.min(n, cols);
-            dockArea.set(getPaddingLeft() - dockPad, Math.max(0, getPaddingTop() - dockPad),
-                    getPaddingLeft() + inRow * cw + (inRow - 1) * hGap + dockPad,
+            dockArea.set(left - dockPad, Math.max(0, getPaddingTop() - dockPad),
+                    left + inRow * cw + (inRow - 1) * gap + dockPad,
                     getPaddingTop() + ch + dockPad * 0.9f);
         }
         for (int i = 0; i < n; i++) {
             int col = i % cols, row = i / cols;
-            int x = getPaddingLeft() + col * (cw + hGap);
+            int x = left + col * (cw + gap);
             int y = getPaddingTop() + row * (ch + vGap) + (docked && row > 0 ? dockGap : 0);
             getChildAt(i).layout(x, y, x + cw, y + ch);
         }
