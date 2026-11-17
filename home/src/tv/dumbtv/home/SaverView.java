@@ -35,6 +35,10 @@ final class SaverView extends FrameLayout {
     private static final long STEP_MS = 60_000;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
+    private static final java.util.concurrent.ExecutorService IO =
+            java.util.concurrent.Executors.newSingleThreadExecutor();
+    /** Counts picture loads; a load that finishes after a newer one started is dropped. */
+    private int loads;
     private final ImageView wall;
     private final TextView clock, date, net;
     private final LinearLayout gamesCard, prayerCard, weatherCard;
@@ -309,6 +313,7 @@ final class SaverView extends FrameLayout {
     }
 
     void stop() {
+        loads++;
         ui.removeCallbacks(tick);
         ui.removeCallbacks(next);
     }
@@ -330,17 +335,34 @@ final class SaverView extends FrameLayout {
         }
     }
 
+    /**
+     * Picks the next picture and decodes it on a worker thread: a large photo takes a few hundred
+     * milliseconds, and the main thread is the one the remote's keys wait on (TCL Home Tasten).
+     */
     private void nextWallpaper() {
         Context c = getContext();
         List<File> pool = Config.get(c).wallpapers();
-        Bitmap b = null;
+        final File file;
         if (!pool.isEmpty()) {
             index = (index + 1) % pool.size();
-            b = decode(pool.get(index));
+            file = pool.get(index);
         } else {
-            File one = Config.get(c).wallpaper();
-            if (one != null) b = decode(one);
+            file = Config.get(c).wallpaper();
         }
+        final int ticket = ++loads;
+        IO.execute(() -> {
+            final Bitmap b = file == null ? null : decode(file);
+            ui.post(() -> {
+                if (ticket != loads) {
+                    if (b != null) b.recycle();
+                    return;
+                }
+                show(b);
+            });
+        });
+    }
+
+    private void show(Bitmap b) {
         Drawable d = b != null ? new BitmapDrawable(getResources(), b)
                 : getResources().getDrawable(R.drawable.wallpaper, null);
         if (shown == null) {
@@ -355,16 +377,7 @@ final class SaverView extends FrameLayout {
     }
 
     private Bitmap decode(File f) {
-        int w = getResources().getDisplayMetrics().widthPixels;
-        int h = getResources().getDisplayMetrics().heightPixels;
-        BitmapFactory.Options o = new BitmapFactory.Options();
-        o.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(f.getPath(), o);
-        o.inSampleSize = 1;
-        while (o.outWidth / (o.inSampleSize * 2) >= w && o.outHeight / (o.inSampleSize * 2) >= h) {
-            o.inSampleSize *= 2;
-        }
-        o.inJustDecodeBounds = false;
-        return BitmapFactory.decodeFile(f.getPath(), o);
+        return Ui.decodeFit(f, getResources().getDisplayMetrics().widthPixels,
+                getResources().getDisplayMetrics().heightPixels);
     }
 }

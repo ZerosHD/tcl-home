@@ -2,6 +2,8 @@ package tv.dumbtv.home;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -57,5 +59,35 @@ final class Ui {
         v.setTextColor(new ColorStateList(
                 new int[][] {{android.R.attr.state_focused}, {}},
                 new int[] {ink(accent), 0xD9FFFFFF}));
+    }
+
+    /**
+     * A wallpaper decoded just large enough to cover a w by h screen: halved while that still
+     * covers it, then scaled down the rest of the way. A 2560 pixel photo for a 1920 by 1080
+     * screen takes 8 MB instead of 16, in memory and again as a texture on the graphics chip.
+     * Null when the file cannot be read or memory runs out.
+     */
+    static Bitmap decodeFit(java.io.File f, int w, int h) {
+        try {
+            BitmapFactory.Options o = new BitmapFactory.Options();
+            o.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(f.getPath(), o);
+            if (o.outWidth <= 0 || o.outHeight <= 0) return null;
+            o.inSampleSize = 1;
+            while (o.outWidth / (o.inSampleSize * 2) >= w && o.outHeight / (o.inSampleSize * 2) >= h) {
+                o.inSampleSize *= 2;
+            }
+            o.inJustDecodeBounds = false;
+            Bitmap b = BitmapFactory.decodeFile(f.getPath(), o);
+            if (b == null) return null;
+            float scale = Math.max(w / (float) b.getWidth(), h / (float) b.getHeight());
+            if (scale >= 0.9f) return b;
+            Bitmap fit = Bitmap.createScaledBitmap(b, Math.max(w, Math.round(b.getWidth() * scale)),
+                    Math.max(h, Math.round(b.getHeight() * scale)), true);
+            if (fit != b) b.recycle();
+            return fit;
+        } catch (OutOfMemoryError | RuntimeException e) {
+            return null;
+        }
     }
 }

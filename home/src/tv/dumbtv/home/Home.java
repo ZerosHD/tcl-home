@@ -1038,15 +1038,7 @@ public final class Home extends Activity {
     }
 
     private static Bitmap decode(File f, int w, int h) {
-        BitmapFactory.Options o = new BitmapFactory.Options();
-        o.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(f.getPath(), o);
-        o.inSampleSize = 1;
-        while (o.outWidth / (o.inSampleSize * 2) >= w && o.outHeight / (o.inSampleSize * 2) >= h) {
-            o.inSampleSize *= 2;
-        }
-        o.inJustDecodeBounds = false;
-        return BitmapFactory.decodeFile(f.getPath(), o);
+        return Ui.decodeFit(f, w, h);
     }
 
     /**
