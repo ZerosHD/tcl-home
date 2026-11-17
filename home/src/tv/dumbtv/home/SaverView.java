@@ -82,22 +82,22 @@ final class SaverView extends FrameLayout {
                 new int[] {0xAA000000, 0x00000000});
         android.view.View shade = new android.view.View(c);
         shade.setBackground(fade);
-        LayoutParams sl = new LayoutParams(LayoutParams.MATCH_PARENT, Ui.dp(c, 380), Gravity.BOTTOM);
+        LayoutParams sl = new LayoutParams(LayoutParams.MATCH_PARENT, Ui.dp(c, 300), Gravity.BOTTOM);
         addView(shade, sl);
 
         LinearLayout box = new LinearLayout(c);
         box.setOrientation(LinearLayout.VERTICAL);
-        clock = Ui.text(c, 88, Ui.TEXT, Ui.LIGHT);
+        clock = Ui.text(c, 66, Ui.TEXT, Ui.LIGHT);
         clock.setFontFeatureSettings("tnum");
         android.graphics.Typeface regular = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL);
-        date = Ui.text(c, 20, 0xE6FFFFFF, regular);
-        date.setPadding(Ui.dp(c, 5), Ui.dp(c, 4), 0, 0);
-        net = Ui.text(c, 14, 0xA6FFFFFF, regular);
-        net.setPadding(Ui.dp(c, 6), Ui.dp(c, 10), 0, 0);
+        date = Ui.text(c, 16, 0xE6FFFFFF, regular);
+        date.setPadding(Ui.dp(c, 4), Ui.dp(c, 2), 0, 0);
+        net = Ui.text(c, 12, 0xA6FFFFFF, regular);
+        net.setPadding(Ui.dp(c, 5), Ui.dp(c, 7), 0, 0);
         net.setGravity(Gravity.CENTER_VERTICAL);
-        icon = new WifiIcon(Ui.dp(c, 15), 0xA6FFFFFF);
+        icon = new WifiIcon(Ui.dp(c, 12), 0xA6FFFFFF);
         net.setCompoundDrawables(icon, null, null, null);
-        net.setCompoundDrawablePadding(Ui.dp(c, 8));
+        net.setCompoundDrawablePadding(Ui.dp(c, 6));
         box.addView(clock);
         box.addView(date);
         box.addView(net);
@@ -140,20 +140,20 @@ final class SaverView extends FrameLayout {
         now.setGravity(Gravity.CENTER_VERTICAL);
         ImageView big = new ImageView(c);
         big.setImageDrawable(sky);
-        now.addView(big, new LinearLayout.LayoutParams(Ui.dp(c, 34), Ui.dp(c, 34)));
-        degrees = Ui.text(c, 34, Ui.TEXT, Ui.LIGHT);
+        now.addView(big, new LinearLayout.LayoutParams(Ui.dp(c, 26), Ui.dp(c, 26)));
+        degrees = Ui.text(c, 26, Ui.TEXT, Ui.LIGHT);
         degrees.setFontFeatureSettings("tnum");
-        degrees.setPadding(Ui.dp(c, 10), 0, 0, 0);
+        degrees.setPadding(Ui.dp(c, 8), 0, 0, 0);
         now.addView(degrees);
         today.addView(now);
         skyText = body(c, Ui.TEXT);
-        skyText.setPadding(0, Ui.dp(c, 9), 0, 0);
+        skyText.setPadding(0, Ui.dp(c, 6), 0, 0);
         today.addView(skyText);
         range = body(c, SOFT);
-        range.setPadding(0, Ui.dp(c, 5), 0, 0);
+        range.setPadding(0, Ui.dp(c, 3), 0, 0);
         today.addView(range);
         rain = body(c, SOFT);
-        rain.setPadding(0, Ui.dp(c, 5), 0, 0);
+        rain.setPadding(0, Ui.dp(c, 3), 0, 0);
         today.addView(rain);
         weather.body.addView(today);
         // the week: one row per day, like the prayer times beside it
@@ -163,17 +163,17 @@ final class SaverView extends FrameLayout {
             LinearLayout line = new LinearLayout(c);
             line.setGravity(Gravity.CENTER_VERTICAL);
             dayName[i] = body(c, QUIET);
-            line.addView(dayName[i], new LinearLayout.LayoutParams(Ui.dp(c, 26), LayoutParams.WRAP_CONTENT));
+            line.addView(dayName[i], new LinearLayout.LayoutParams(Ui.dp(c, 21), LayoutParams.WRAP_CONTENT));
             daySky[i] = new WeatherIcon();
             ImageView small = new ImageView(c);
             small.setImageDrawable(daySky[i]);
-            line.addView(small, new LinearLayout.LayoutParams(Ui.dp(c, 15), Ui.dp(c, 15)));
+            line.addView(small, new LinearLayout.LayoutParams(Ui.dp(c, 12), Ui.dp(c, 12)));
             dayHigh[i] = body(c, Ui.TEXT);
             dayHigh[i].setGravity(Gravity.END);
             line.addView(dayHigh[i], new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
             dayLow[i] = body(c, SOFT);
             dayLow[i].setGravity(Gravity.END);
-            line.addView(dayLow[i], new LinearLayout.LayoutParams(Ui.dp(c, 30), LayoutParams.WRAP_CONTENT));
+            line.addView(dayLow[i], new LinearLayout.LayoutParams(Ui.dp(c, 24), LayoutParams.WRAP_CONTENT));
             week.addView(line, rowParams(c, i));
         }
         weather.body.addView(week);
@@ -200,7 +200,7 @@ final class SaverView extends FrameLayout {
     }
 
     /** Width of the right-hand panel, the gap between its cards, and the screen margins, in dp. */
-    private static final int PANEL = 372, GAP = 10, EDGE = 64, BOTTOM = 48;
+    private static final int PANEL = 296, GAP = 8, EDGE = 48, BOTTOM = 40;
     /** Text that is not highlighted, and secondary text. */
     private static final int QUIET = 0xD9FFFFFF, SOFT = 0x99FFFFFF;
 
@@ -212,10 +212,10 @@ final class SaverView extends FrameLayout {
         Card(Context c) {
             card = new LinearLayout(c);
             card.setOrientation(LinearLayout.VERTICAL);
-            android.graphics.drawable.GradientDrawable glass = Ui.round(0x73000000, Ui.dp(c, 16));
+            android.graphics.drawable.GradientDrawable glass = Ui.round(0x66000000, Ui.dp(c, 13));
             glass.setStroke(Math.max(1, Ui.dp(c, 0.5f)), 0x1FFFFFFF);
             card.setBackground(glass);
-            card.setPadding(Ui.dp(c, 16), Ui.dp(c, 13), Ui.dp(c, 16), Ui.dp(c, 14));
+            card.setPadding(Ui.dp(c, 12), Ui.dp(c, 10), Ui.dp(c, 12), Ui.dp(c, 11));
             LinearLayout head = new LinearLayout(c);
             title = heading(c);
             note = heading(c);
@@ -224,7 +224,7 @@ final class SaverView extends FrameLayout {
             head.addView(note);
             LinearLayout.LayoutParams hl = new LinearLayout.LayoutParams(
                     LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-            hl.bottomMargin = Ui.dp(c, 9);
+            hl.bottomMargin = Ui.dp(c, 7);
             card.addView(head, hl);
             body = new LinearLayout(c);
             body.setOrientation(LinearLayout.VERTICAL);
@@ -233,7 +233,7 @@ final class SaverView extends FrameLayout {
         }
 
         private static TextView heading(Context c) {
-            TextView t = Ui.text(c, 10, 0x8CFFFFFF, Ui.MEDIUM);
+            TextView t = Ui.text(c, 8, 0x8CFFFFFF, Ui.MEDIUM);
             t.setLetterSpacing(0.14f);
             t.setSingleLine(true);
             return t;
@@ -251,7 +251,7 @@ final class SaverView extends FrameLayout {
         GameRow(Context c) {
             row = new LinearLayout(c);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(Ui.dp(c, 4), Ui.dp(c, 1), Ui.dp(c, 4), Ui.dp(c, 1));
+            row.setPadding(Ui.dp(c, 3), Ui.dp(c, 1), Ui.dp(c, 3), Ui.dp(c, 1));
             when = body(c, SOFT);
             home = body(c, QUIET);
             home.setGravity(Gravity.END);
@@ -260,9 +260,9 @@ final class SaverView extends FrameLayout {
             mid.setGravity(Gravity.CENTER);
             away = body(c, QUIET);
             away.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            row.addView(when, new LinearLayout.LayoutParams(Ui.dp(c, 60), LayoutParams.WRAP_CONTENT));
+            row.addView(when, new LinearLayout.LayoutParams(Ui.dp(c, 48), LayoutParams.WRAP_CONTENT));
             row.addView(home, new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
-            row.addView(mid, new LinearLayout.LayoutParams(Ui.dp(c, 42), LayoutParams.WRAP_CONTENT));
+            row.addView(mid, new LinearLayout.LayoutParams(Ui.dp(c, 32), LayoutParams.WRAP_CONTENT));
             row.addView(away, new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
             row.setVisibility(GONE);
         }
@@ -270,7 +270,7 @@ final class SaverView extends FrameLayout {
 
     /** Body text: regular weight, one line, figures of equal width so columns line up. */
     private static TextView body(Context c, int color) {
-        TextView t = Ui.text(c, 13, color, android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL));
+        TextView t = Ui.text(c, 10.5f, color, android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL));
         t.setSingleLine(true);
         t.setFontFeatureSettings("tnum");
         return t;
@@ -278,7 +278,7 @@ final class SaverView extends FrameLayout {
 
     private static LinearLayout.LayoutParams rowParams(Context c, int i) {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        if (i > 0) lp.topMargin = Ui.dp(c, 5);
+        if (i > 0) lp.topMargin = Ui.dp(c, 3);
         return lp;
     }
 
@@ -404,7 +404,7 @@ final class SaverView extends FrameLayout {
         r.away.setTextColor(clubs.contains(String.valueOf(m.away)) ? accent : QUIET);
         r.mid.setText(m.live() || m.over() ? m.goalsHome + ":" + m.goalsAway : "–");
         r.mid.setTextColor(m.live() || m.over() ? Ui.TEXT : SOFT);
-        r.row.setBackground(m.derby ? Ui.round(0x26FFB340, Ui.dp(getContext(), 6)) : null);
+        r.row.setBackground(m.derby ? Ui.round(0x26FFB340, Ui.dp(getContext(), 5)) : null);
     }
 
     void start() {
