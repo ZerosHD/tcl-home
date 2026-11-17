@@ -142,9 +142,9 @@ final class Config {
             new String[] {"off", "daily", "weekly"},
             new String[] {"Aus", "Täglich 3 neue", "Wöchentlich 9 neue"});
     /** What moving between tiles and pressing OK sound like in TCL Home; see Sounds. */
-    static final Choice NAV_SOUND = new Choice("navsound", "Navigationston", "glass",
-            new String[] {"glass", "wood", "tv", "off"},
-            new String[] {"Glas", "Holz", "TV-Standard", "Aus"});
+    static final Choice NAV_SOUND = new Choice("navsound", "Navigationston", "edel",
+            new String[] {"edel", "glass", "wood", "tv", "off"},
+            new String[] {"Edel", "Glas", "Holz", "TV-Standard", "Aus"});
     static final Choice[] CHOICES = {ACCENT, FOCUS, DOCK, TILES, LAYOUT, ORDER, LABELS, CLOCK, MEMORY, INPUTS, SWITCH, BACKGROUND, DIM, ROTATE, BACK, SAVER, LOCK, TILE_STYLE, WEATHER, PRAYER, FOOTBALL, GALLERY, NAV_SOUND};
 
     /** Folder of wallpapers, next to home.conf, that Background › Image file rotates through. */

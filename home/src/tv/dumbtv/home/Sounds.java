@@ -14,7 +14,8 @@ import android.view.ViewTreeObserver;
  *
  * Android plays a navigation click itself whenever focus moves between views that allow sound
  * effects. Here those effects are switched off on every view of the screen and the sound picked
- * under Optionen › Navigationston is played instead: Glas or Holz (short samples made for this,
+ * under Optionen › Navigationston is played instead: Edel (a muted, tactile tick and a round
+ * pop with a little room), Glas or Holz (short samples made for this,
  * in res/raw), the TV's own click, or nothing. Other apps keep the TV's sounds.
  *
  * Like the TV's clicks, nothing plays while sound effects are off in the TV's settings.
@@ -25,7 +26,7 @@ final class Sounds {
     private final Context app;
     private final AudioManager audio;
     private final SoundPool pool;
-    private final int glassMove, glassSelect, woodMove, woodSelect;
+    private final int edelMove, edelSelect, glassMove, glassSelect, woodMove, woodSelect;
 
     static synchronized Sounds get(Context c) {
         if (instance == null) instance = new Sounds(c.getApplicationContext());
@@ -42,6 +43,8 @@ final class Sounds {
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .build())
                 .build();
+        edelMove = pool.load(c, R.raw.edel_move, 1);
+        edelSelect = pool.load(c, R.raw.edel_select, 1);
         glassMove = pool.load(c, R.raw.glass_move, 1);
         glassSelect = pool.load(c, R.raw.glass_select, 1);
         woodMove = pool.load(c, R.raw.wood_move, 1);
@@ -67,8 +70,10 @@ final class Sounds {
             }
             return;
         }
-        boolean wood = "wood".equals(mode);
-        int id = select ? (wood ? woodSelect : glassSelect) : (wood ? woodMove : glassMove);
+        int id;
+        if ("wood".equals(mode)) id = select ? woodSelect : woodMove;
+        else if ("glass".equals(mode)) id = select ? glassSelect : glassMove;
+        else id = select ? edelSelect : edelMove;
         pool.play(id, 1f, 1f, 1, 0, 1f);
     }
 
