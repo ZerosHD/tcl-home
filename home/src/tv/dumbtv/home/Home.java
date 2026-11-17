@@ -361,7 +361,7 @@ public final class Home extends Activity {
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
         okSound(e);
-        if (moving == null) return super.dispatchKeyEvent(e);
+        if (moving == null) return Sounds.navigate(this, e, super.dispatchKeyEvent(e));
         if (e.getAction() == KeyEvent.ACTION_DOWN) {
             switch (e.getKeyCode()) {
                 case KeyEvent.KEYCODE_DPAD_LEFT:

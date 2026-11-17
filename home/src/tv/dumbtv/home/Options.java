@@ -128,7 +128,7 @@ public final class Options extends Activity {
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
         okSound(e);
-        return super.dispatchKeyEvent(e);
+        return Sounds.navigate(this, e, super.dispatchKeyEvent(e));
     }
 
     @Override

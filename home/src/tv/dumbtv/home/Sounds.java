@@ -95,6 +95,28 @@ final class Sounds {
         });
     }
 
+    /**
+     * Moves focus for an arrow key the screen did not use, the way Android would, but without
+     * its click: Android plays that click itself after a successful focus move, whatever the
+     * views' sound settings say. Call it with the result of the normal key dispatch; true when
+     * the key moved focus here.
+     */
+    static boolean navigate(android.app.Activity a, android.view.KeyEvent e, boolean handled) {
+        if (handled || e.getAction() != android.view.KeyEvent.ACTION_DOWN) return handled;
+        int direction;
+        switch (e.getKeyCode()) {
+            case android.view.KeyEvent.KEYCODE_DPAD_UP: direction = View.FOCUS_UP; break;
+            case android.view.KeyEvent.KEYCODE_DPAD_DOWN: direction = View.FOCUS_DOWN; break;
+            case android.view.KeyEvent.KEYCODE_DPAD_LEFT: direction = View.FOCUS_LEFT; break;
+            case android.view.KeyEvent.KEYCODE_DPAD_RIGHT: direction = View.FOCUS_RIGHT; break;
+            default: return false;
+        }
+        View from = a.getCurrentFocus();
+        if (from == null) return false;
+        View to = from.focusSearch(direction);
+        return to != null && to != from && to.requestFocus(direction);
+    }
+
     private static void mute(View v) {
         v.setSoundEffectsEnabled(false);
         if (v instanceof ViewGroup) {
