@@ -325,7 +325,9 @@ home_rights() {
   dev pm grant $HOME_PKG android.permission.ACCESS_FINE_LOCATION
   dev pm grant $HOME_PKG android.permission.WRITE_SECURE_SETTINGS
   dev appops set $HOME_PKG WRITE_SETTINGS allow
-  dev appops set $HOME_PKG AUTO_START allow
+  # TCL lets an accessibility service start only with its own app-op APP_AUTO_START (number 100),
+  # and a reinstall resets it to ignore. Without it the key service stays off after every update.
+  dev appops set $HOME_PKG APP_AUTO_START allow 2>/dev/null || dev appops set $HOME_PKG 100 allow 2>/dev/null || true
   # Ohne eingeschalteten Standort verrät Android den WLAN-Namen nicht.
   dev settings put secure location_mode 3
   dev cmd location set-location-enabled true >/dev/null
