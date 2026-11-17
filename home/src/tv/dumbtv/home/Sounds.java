@@ -14,8 +14,8 @@ import android.view.ViewTreeObserver;
  *
  * Android plays a navigation click itself whenever focus moves between views that allow sound
  * effects. Here those effects are switched off on every view of the screen and the sound picked
- * under Optionen › Navigationston is played instead: Edel (a muted, tactile tick and a round
- * pop with a little room), Glas or Holz (short samples made for this,
+ * under Optionen › Navigationston is played instead: Edel (a muted, tactile tick and, for OK, a calm low tock, both with
+ * a little room), Glas or Holz (short samples made for this,
  * in res/raw), the TV's own click, or nothing. Other apps keep the TV's sounds.
  *
  * Like the TV's clicks, nothing plays while sound effects are off in the TV's settings.
