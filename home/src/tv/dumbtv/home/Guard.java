@@ -148,6 +148,7 @@ public final class Guard extends AccessibilityService {
                 unregisterReceiver(volume);
             } catch (IllegalArgumentException ignored) {
             }
+            volume.stop();
             volume = null;
         }
         if (cover != null) ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(cover);
