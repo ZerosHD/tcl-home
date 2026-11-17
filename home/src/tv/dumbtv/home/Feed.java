@@ -89,6 +89,9 @@ final class Feed {
         final int temperature, code, high, low, rain;
         final boolean day;
         final long at;
+        /** The coming days, tomorrow first: date (yyyy-MM-dd), weather code, high, low, chance of rain. */
+        String[] dates = new String[0];
+        int[] codes = new int[0], highs = new int[0], lows = new int[0], rains = new int[0];
 
         Weather(String place, int temperature, int code, boolean day, int high, int low, int rain, long at) {
             this.place = place;
@@ -103,6 +106,34 @@ final class Feed {
 
         String sky() {
             return Feed.sky(code);
+        }
+
+        /** The coming days as one cache line: date,code,high,low,rain;... */
+        String daysLine() {
+            StringBuilder b = new StringBuilder();
+            for (int i = 0; i < dates.length; i++) {
+                if (i > 0) b.append(';');
+                b.append(dates[i]).append(',').append(codes[i]).append(',').append(highs[i])
+                        .append(',').append(lows[i]).append(',').append(rains[i]);
+            }
+            return b.toString();
+        }
+
+        void readDays(String line) {
+            String[] parts = line.isEmpty() ? new String[0] : line.split(";");
+            dates = new String[parts.length];
+            codes = new int[parts.length];
+            highs = new int[parts.length];
+            lows = new int[parts.length];
+            rains = new int[parts.length];
+            for (int i = 0; i < parts.length; i++) {
+                String[] p = parts[i].split(",");
+                dates[i] = p[0];
+                codes[i] = Integer.parseInt(p[1]);
+                highs[i] = Integer.parseInt(p[2]);
+                lows[i] = Integer.parseInt(p[3]);
+                rains[i] = Integer.parseInt(p[4]);
+            }
         }
     }
 
@@ -120,11 +151,13 @@ final class Feed {
         store = c.getSharedPreferences("feed", Context.MODE_PRIVATE);
         try {
             String[] w = store.getString("weather2", "").split("\n");
-            if (w.length == 8) {
-                weather = new Weather(w[0], Integer.parseInt(w[1]), Integer.parseInt(w[2]), "1".equals(w[3]),
+            if (w.length >= 8) {
+                Weather cached = new Weather(w[0], Integer.parseInt(w[1]), Integer.parseInt(w[2]), "1".equals(w[3]),
                         Integer.parseInt(w[4]), Integer.parseInt(w[5]), Integer.parseInt(w[6]), Long.parseLong(w[7]));
+                if (w.length >= 9) cached.readDays(w[8]);
+                weather = cached;
             }
-        } catch (NumberFormatException ignored) {
+        } catch (NumberFormatException | ArrayIndexOutOfBoundsException ignored) {
             // an unreadable cache is simply fetched again
         }
         String[] p = store.getString("prayer", "").split("\n");
@@ -177,7 +210,7 @@ final class Feed {
 
         Weather had = weather;
         if (place != null && "on".equals(cfg.get(Config.WEATHER))
-                && (had == null || !placeKey.equals(had.place) || now - had.at > WEATHER_EVERY)
+                && (had == null || !placeKey.equals(had.place) || had.dates.length == 0 || now - had.at > WEATHER_EVERY)
                 && due("weather", RETRY)) {
             io.execute(new Runnable() {
                 @Override
@@ -228,8 +261,8 @@ final class Feed {
             JSONObject all = new JSONObject(http("https://api.open-meteo.com/v1/forecast?latitude="
                     + place[1] + "&longitude=" + place[2]
                     + "&current=temperature_2m,weather_code,is_day"
-                    + "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max"
-                    + "&forecast_days=1&timezone=auto"));
+                    + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+                    + "&forecast_days=7&timezone=auto"));
             JSONObject now = all.getJSONObject("current"), day = all.getJSONObject("daily");
             Weather w = new Weather(placeKey,
                     (int) Math.round(now.getDouble("temperature_2m")),
@@ -240,9 +273,25 @@ final class Feed {
                     // the chance of rain is missing for some places; -1 hides it
                     (int) Math.round(day.getJSONArray("precipitation_probability_max").optDouble(0, -1)),
                     System.currentTimeMillis());
+            JSONArray dates = day.getJSONArray("time"), codes = day.getJSONArray("weather_code"),
+                    highs = day.getJSONArray("temperature_2m_max"), lows = day.getJSONArray("temperature_2m_min"),
+                    rains = day.getJSONArray("precipitation_probability_max");
+            int n = Math.max(0, dates.length() - 1);
+            w.dates = new String[n];
+            w.codes = new int[n];
+            w.highs = new int[n];
+            w.lows = new int[n];
+            w.rains = new int[n];
+            for (int i = 0; i < n; i++) {
+                w.dates[i] = dates.getString(i + 1);
+                w.codes[i] = codes.optInt(i + 1, 0);
+                w.highs[i] = (int) Math.round(highs.optDouble(i + 1, 0));
+                w.lows[i] = (int) Math.round(lows.optDouble(i + 1, 0));
+                w.rains[i] = (int) Math.round(rains.optDouble(i + 1, -1));
+            }
             weather = w;
             store.edit().putString("weather2", w.place + "\n" + w.temperature + "\n" + w.code + "\n"
-                    + (w.day ? "1" : "0") + "\n" + w.high + "\n" + w.low + "\n" + w.rain + "\n" + w.at).apply();
+                    + (w.day ? "1" : "0") + "\n" + w.high + "\n" + w.low + "\n" + w.rain + "\n" + w.at + "\n" + w.daysLine()).apply();
         } catch (IOException | JSONException | RuntimeException e) {
             Log.w("dumbtv", "weather: " + e);
         }

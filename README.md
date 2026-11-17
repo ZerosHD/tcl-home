@@ -133,8 +133,9 @@ den Bedienungshilfe-Dienst „TCL Home Tasten“ (Fernbedienung).
 Unten rechts auf dem Sperrbildschirm stehen bis zu drei Dinge. Alles stellst du am TV
 unter *Optionen* ein:
 
-- **Wetter:** eine kleine Karte mit Wettersymbol, Temperatur, Wetterlage, Höchst- und
-  Tiefstwert und Regenwahrscheinlichkeit an deinem Ort. Zuerst *Optionen › Ort für Wetter
+- **Wetter:** eine Karte, die alle zehn Sekunden zwischen *Heute* (Wettersymbol, Temperatur,
+  Wetterlage, Höchst- und Tiefstwert, Regenwahrscheinlichkeit) und *Woche* (die nächsten sechs
+  Tage mit Symbol, Höchst- und Tiefstwert) wechselt. Zuerst *Optionen › Ort für Wetter
   und Gebetszeiten* wählen, sonst bleibt die Zeile leer. *Optionen › Wetter* schaltet sie aus.
 - **Gebetszeiten:** eine Karte links neben dem Wetter mit Fajr, Shuruq, Dhuhr, Asr,
   Maghrib und Isha für heute untereinander, das nächste Gebet in der Akzentfarbe. Sie werden jeden Tag neu geholt. *Optionen › Gebetszeiten*

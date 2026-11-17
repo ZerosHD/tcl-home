@@ -41,13 +41,16 @@ final class SaverView extends FrameLayout {
     private int loads;
     private final ImageView wall;
     private final TextView clock, date, net;
-    private final LinearLayout gamesCard, prayerCard, weatherCard;
-    /** Text on the cards that is not highlighted. */
-    private static final int QUIET = 0xCCFFFFFF;
-    private final TextView games, degrees, skyText, range;
+    private final Card games, prayer, weather;
+    private final GameRow[] gameRows = new GameRow[6];
     private final TextView[] prayerName = new TextView[Feed.PRAYER_NAMES.length];
     private final TextView[] prayerTime = new TextView[Feed.PRAYER_NAMES.length];
-    private final WeatherIcon sky;
+    /** The weather card's two pages: today, and the coming six days. */
+    private final LinearLayout today, week;
+    private final TextView degrees, skyText, range, rain;
+    private final WeatherIcon sky = new WeatherIcon();
+    private final TextView[] dayName = new TextView[6], dayHigh = new TextView[6], dayLow = new TextView[6];
+    private final WeatherIcon[] daySky = new WeatherIcon[6];
     private boolean sideShown;
     private final WifiIcon icon;
     private Drawable shown;
@@ -79,18 +82,20 @@ final class SaverView extends FrameLayout {
                 new int[] {0xAA000000, 0x00000000});
         android.view.View shade = new android.view.View(c);
         shade.setBackground(fade);
-        LayoutParams sl = new LayoutParams(LayoutParams.MATCH_PARENT, Ui.dp(c, 320), Gravity.BOTTOM);
+        LayoutParams sl = new LayoutParams(LayoutParams.MATCH_PARENT, Ui.dp(c, 380), Gravity.BOTTOM);
         addView(shade, sl);
 
         LinearLayout box = new LinearLayout(c);
         box.setOrientation(LinearLayout.VERTICAL);
-        clock = Ui.text(c, 96, Ui.TEXT, Ui.LIGHT);
-        date = Ui.text(c, 22, 0xDDFFFFFF, Ui.MEDIUM);
-        date.setPadding(Ui.dp(c, 4), Ui.dp(c, 6), 0, 0);
-        net = Ui.text(c, 16, 0xBBFFFFFF, Ui.MEDIUM);
-        net.setPadding(Ui.dp(c, 4), Ui.dp(c, 10), 0, 0);
+        clock = Ui.text(c, 88, Ui.TEXT, Ui.LIGHT);
+        clock.setFontFeatureSettings("tnum");
+        android.graphics.Typeface regular = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL);
+        date = Ui.text(c, 20, 0xE6FFFFFF, regular);
+        date.setPadding(Ui.dp(c, 5), Ui.dp(c, 4), 0, 0);
+        net = Ui.text(c, 14, 0xA6FFFFFF, regular);
+        net.setPadding(Ui.dp(c, 6), Ui.dp(c, 10), 0, 0);
         net.setGravity(Gravity.CENTER_VERTICAL);
-        icon = new WifiIcon(Ui.dp(c, 18), 0xDDFFFFFF);
+        icon = new WifiIcon(Ui.dp(c, 15), 0xA6FFFFFF);
         net.setCompoundDrawables(icon, null, null, null);
         net.setCompoundDrawablePadding(Ui.dp(c, 8));
         box.addView(clock);
@@ -98,133 +103,235 @@ final class SaverView extends FrameLayout {
         box.addView(net);
         LayoutParams bl = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM | Gravity.START);
-        bl.leftMargin = Ui.dp(c, 64);
-        bl.bottomMargin = Ui.dp(c, 56);
+        bl.leftMargin = Ui.dp(c, EDGE);
+        bl.bottomMargin = Ui.dp(c, BOTTOM);
         addView(box, bl);
 
-        // Bottom right: the football card on top, below it the prayer times and, in the corner,
-        // the weather. Each card only shows when there is something to put in it.
+        // Bottom right: three glass cards on one grid. Football spans the full width on top;
+        // below it the prayer times and the weather share the width and the height, row for row.
         LinearLayout side = new LinearLayout(c);
         side.setOrientation(LinearLayout.VERTICAL);
-        side.setGravity(Gravity.END);
 
-        gamesCard = card(c, "Fußball");
-        games = Ui.text(c, 12, QUIET, Ui.MEDIUM);
-        games.setLineSpacing(Ui.dp(c, 4), 1f);
-        gamesCard.addView(games);
-        gamesCard.setMinimumWidth(Ui.dp(c, 250));
-
-        // One row per prayer: the name on the left, the time on the right. Each is its own
-        // single-line view with room for five digits, so a time can never wrap or lose a digit.
-        prayerCard = card(c, "Gebetszeiten");
-        for (int i = 0; i < prayerName.length; i++) {
-            LinearLayout line = new LinearLayout(c);
-            prayerName[i] = Ui.text(c, 12, QUIET, Ui.MEDIUM);
-            prayerName[i].setSingleLine(true);
-            prayerName[i].setText(Feed.PRAYER_NAMES[i]);
-            prayerTime[i] = Ui.text(c, 12, QUIET, Ui.MEDIUM);
-            prayerTime[i].setSingleLine(true);
-            prayerTime[i].setGravity(Gravity.END);
-            prayerTime[i].setMinWidth((int) Math.ceil(prayerTime[i].getPaint().measureText("00:00")) + Ui.dp(c, 3));
-            line.addView(prayerName[i], new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
-            LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(
-                    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            tl.leftMargin = Ui.dp(c, 16);
-            line.addView(prayerTime[i], tl);
-            LinearLayout.LayoutParams ll = new LinearLayout.LayoutParams(
-                    LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-            if (i > 0) ll.topMargin = Ui.dp(c, 3);
-            prayerCard.addView(line, ll);
+        games = new Card(c);
+        for (int i = 0; i < gameRows.length; i++) {
+            gameRows[i] = new GameRow(c);
+            games.body.addView(gameRows[i].row, rowParams(c, i));
         }
 
-        weatherCard = card(c, "Wetter");
-        weatherCard.setMinimumWidth(Ui.dp(c, 124));
-        LinearLayout top = new LinearLayout(c);
-        top.setGravity(Gravity.CENTER_VERTICAL);
-        sky = new WeatherIcon();
-        ImageView picture = new ImageView(c);
-        picture.setImageDrawable(sky);
-        top.addView(picture, new LinearLayout.LayoutParams(Ui.dp(c, 36), Ui.dp(c, 36)));
-        degrees = Ui.text(c, 28, 0xEEFFFFFF, Ui.LIGHT);
-        degrees.setPadding(Ui.dp(c, 9), 0, 0, 0);
-        top.addView(degrees);
-        weatherCard.addView(top);
-        skyText = Ui.text(c, 12, 0xDDFFFFFF, Ui.MEDIUM);
-        skyText.setPadding(0, Ui.dp(c, 5), 0, 0);
-        weatherCard.addView(skyText);
-        range = Ui.text(c, 10, 0x99FFFFFF, Ui.MEDIUM);
-        range.setLineSpacing(Ui.dp(c, 2), 1f);
-        range.setPadding(0, Ui.dp(c, 3), 0, 0);
-        weatherCard.addView(range);
+        prayer = new Card(c);
+        prayer.title.setText("GEBETSZEITEN");
+        for (int i = 0; i < prayerName.length; i++) {
+            LinearLayout line = new LinearLayout(c);
+            line.setGravity(Gravity.CENTER_VERTICAL);
+            prayerName[i] = body(c, QUIET);
+            prayerName[i].setText(Feed.PRAYER_NAMES[i]);
+            prayerTime[i] = body(c, QUIET);
+            prayerTime[i].setGravity(Gravity.END);
+            line.addView(prayerName[i], new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
+            line.addView(prayerTime[i]);
+            prayer.body.addView(line, rowParams(c, i));
+        }
 
-        LinearLayout.LayoutParams gl = new LinearLayout.LayoutParams(
-                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        gl.gravity = Gravity.END;
-        gl.bottomMargin = Ui.dp(c, 8);
-        side.addView(gamesCard, gl);
-        LinearLayout row = new LinearLayout(c);
-        row.setGravity(Gravity.BOTTOM);
-        row.addView(prayerCard);
-        LinearLayout.LayoutParams wl = new LinearLayout.LayoutParams(
-                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        wl.leftMargin = Ui.dp(c, 8);
-        row.addView(weatherCard, wl);
-        LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(
-                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        rl.gravity = Gravity.END;
-        side.addView(row, rl);
+        weather = new Card(c);
+        // today: a large reading
+        today = new LinearLayout(c);
+        today.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout now = new LinearLayout(c);
+        now.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView big = new ImageView(c);
+        big.setImageDrawable(sky);
+        now.addView(big, new LinearLayout.LayoutParams(Ui.dp(c, 34), Ui.dp(c, 34)));
+        degrees = Ui.text(c, 34, Ui.TEXT, Ui.LIGHT);
+        degrees.setFontFeatureSettings("tnum");
+        degrees.setPadding(Ui.dp(c, 10), 0, 0, 0);
+        now.addView(degrees);
+        today.addView(now);
+        skyText = body(c, Ui.TEXT);
+        skyText.setPadding(0, Ui.dp(c, 9), 0, 0);
+        today.addView(skyText);
+        range = body(c, SOFT);
+        range.setPadding(0, Ui.dp(c, 5), 0, 0);
+        today.addView(range);
+        rain = body(c, SOFT);
+        rain.setPadding(0, Ui.dp(c, 5), 0, 0);
+        today.addView(rain);
+        weather.body.addView(today);
+        // the week: one row per day, like the prayer times beside it
+        week = new LinearLayout(c);
+        week.setOrientation(LinearLayout.VERTICAL);
+        for (int i = 0; i < dayName.length; i++) {
+            LinearLayout line = new LinearLayout(c);
+            line.setGravity(Gravity.CENTER_VERTICAL);
+            dayName[i] = body(c, QUIET);
+            line.addView(dayName[i], new LinearLayout.LayoutParams(Ui.dp(c, 26), LayoutParams.WRAP_CONTENT));
+            daySky[i] = new WeatherIcon();
+            ImageView small = new ImageView(c);
+            small.setImageDrawable(daySky[i]);
+            line.addView(small, new LinearLayout.LayoutParams(Ui.dp(c, 15), Ui.dp(c, 15)));
+            dayHigh[i] = body(c, Ui.TEXT);
+            dayHigh[i].setGravity(Gravity.END);
+            line.addView(dayHigh[i], new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
+            dayLow[i] = body(c, SOFT);
+            dayLow[i].setGravity(Gravity.END);
+            line.addView(dayLow[i], new LinearLayout.LayoutParams(Ui.dp(c, 30), LayoutParams.WRAP_CONTENT));
+            week.addView(line, rowParams(c, i));
+        }
+        weather.body.addView(week);
+
+        side.addView(games.card, new LinearLayout.LayoutParams(Ui.dp(c, PANEL), LayoutParams.WRAP_CONTENT));
+        LinearLayout pair = new LinearLayout(c);
+        LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1f);
+        pair.addView(prayer.card, pl);
+        LinearLayout.LayoutParams wl = new LinearLayout.LayoutParams(0, LayoutParams.MATCH_PARENT, 1f);
+        wl.leftMargin = Ui.dp(c, GAP);
+        pair.addView(weather.card, wl);
+        LinearLayout.LayoutParams pairParams = new LinearLayout.LayoutParams(Ui.dp(c, PANEL), LayoutParams.WRAP_CONTENT);
+        pairParams.topMargin = Ui.dp(c, GAP);
+        side.addView(pair, pairParams);
+        // with only one of the two, it keeps half the width instead of stretching
+        pair.setWeightSum(2f);
+        pair.setGravity(Gravity.END);
 
         LayoutParams sr = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM | Gravity.END);
-        sr.rightMargin = Ui.dp(c, 32);
-        sr.bottomMargin = Ui.dp(c, 28);
+        sr.rightMargin = Ui.dp(c, EDGE);
+        sr.bottomMargin = Ui.dp(c, BOTTOM);
         addView(side, sr);
     }
 
-    /** A translucent dark box with a small heading; hidden until it has content. */
-    private static LinearLayout card(Context c, String title) {
-        LinearLayout v = new LinearLayout(c);
-        v.setOrientation(LinearLayout.VERTICAL);
-        v.setBackground(Ui.round(0x4D000000, Ui.dp(c, 11)));
-        v.setPadding(Ui.dp(c, 13), Ui.dp(c, 9), Ui.dp(c, 13), Ui.dp(c, 10));
-        TextView t = Ui.text(c, 9, 0x80FFFFFF, Ui.MEDIUM);
-        t.setLetterSpacing(0.12f);
-        t.setPadding(0, 0, 0, Ui.dp(c, 5));
-        v.addView(t);
-        heading(v, title);
-        v.setVisibility(GONE);
-        return v;
+    /** Width of the right-hand panel, the gap between its cards, and the screen margins, in dp. */
+    private static final int PANEL = 372, GAP = 10, EDGE = 64, BOTTOM = 48;
+    /** Text that is not highlighted, and secondary text. */
+    private static final int QUIET = 0xD9FFFFFF, SOFT = 0x99FFFFFF;
+
+    /** A glass card: a small heading with an optional note on the right, and a body. */
+    private static final class Card {
+        final LinearLayout card, body;
+        final TextView title, note;
+
+        Card(Context c) {
+            card = new LinearLayout(c);
+            card.setOrientation(LinearLayout.VERTICAL);
+            android.graphics.drawable.GradientDrawable glass = Ui.round(0x59000000, Ui.dp(c, 16));
+            glass.setStroke(Math.max(1, Ui.dp(c, 0.5f)), 0x1FFFFFFF);
+            card.setBackground(glass);
+            card.setPadding(Ui.dp(c, 16), Ui.dp(c, 13), Ui.dp(c, 16), Ui.dp(c, 14));
+            LinearLayout head = new LinearLayout(c);
+            title = heading(c);
+            note = heading(c);
+            note.setGravity(Gravity.END);
+            head.addView(title, new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
+            head.addView(note);
+            LinearLayout.LayoutParams hl = new LinearLayout.LayoutParams(
+                    LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+            hl.bottomMargin = Ui.dp(c, 9);
+            card.addView(head, hl);
+            body = new LinearLayout(c);
+            body.setOrientation(LinearLayout.VERTICAL);
+            card.addView(body, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+            card.setVisibility(GONE);
+        }
+
+        private static TextView heading(Context c) {
+            TextView t = Ui.text(c, 10, 0x8CFFFFFF, Ui.MEDIUM);
+            t.setLetterSpacing(0.14f);
+            t.setSingleLine(true);
+            return t;
+        }
     }
 
-    private static void heading(LinearLayout card, String title) {
-        ((TextView) card.getChildAt(0)).setText(title.toUpperCase(Locale.GERMAN));
+    /**
+     * One match on a fixed grid: time or state, home club right-aligned, score or dash centred,
+     * away club left-aligned. Long names are cut with an ellipsis, so the card keeps its width.
+     */
+    private static final class GameRow {
+        final LinearLayout row;
+        final TextView when, home, mid, away;
+
+        GameRow(Context c) {
+            row = new LinearLayout(c);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(Ui.dp(c, 4), Ui.dp(c, 1), Ui.dp(c, 4), Ui.dp(c, 1));
+            when = body(c, SOFT);
+            home = body(c, QUIET);
+            home.setGravity(Gravity.END);
+            home.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            mid = body(c, Ui.TEXT);
+            mid.setGravity(Gravity.CENTER);
+            away = body(c, QUIET);
+            away.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            row.addView(when, new LinearLayout.LayoutParams(Ui.dp(c, 60), LayoutParams.WRAP_CONTENT));
+            row.addView(home, new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
+            row.addView(mid, new LinearLayout.LayoutParams(Ui.dp(c, 42), LayoutParams.WRAP_CONTENT));
+            row.addView(away, new LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
+            row.setVisibility(GONE);
+        }
     }
 
-    /** Fills the cards from what {@link Feed} has, and lets it fetch what is due. */
+    /** Body text: regular weight, one line, figures of equal width so columns line up. */
+    private static TextView body(Context c, int color) {
+        TextView t = Ui.text(c, 13, color, android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL));
+        t.setSingleLine(true);
+        t.setFontFeatureSettings("tnum");
+        return t;
+    }
+
+    private static LinearLayout.LayoutParams rowParams(Context c, int i) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        if (i > 0) lp.topMargin = Ui.dp(c, 5);
+        return lp;
+    }
+
+    /** Fills the cards from what {@link Feed} and {@link Soccer} have, and lets them fetch what is due. */
     private void side(Date now) {
         Context c = getContext();
         Config cfg = Config.get(c);
         Feed feed = Feed.get(c);
         feed.refresh(cfg);
         Gallery.get(c).refresh(cfg);
+        int accent = cfg.accent();
 
         Feed.Weather w = feed.weather(cfg);
         if (w == null) {
-            weatherCard.setVisibility(GONE);
+            weather.card.setVisibility(GONE);
         } else {
-            heading(weatherCard, w.place.substring(0, w.place.indexOf('|')));
+            weather.title.setText(w.place.substring(0, w.place.indexOf('|')).toUpperCase(Locale.GERMAN));
+            // today and the week take turns, ten seconds each
+            boolean showWeek = w.dates.length > 0 && now.getTime() / 10_000 % 2 == 1;
+            weather.note.setText(showWeek ? "WOCHE" : "HEUTE");
+            today.setVisibility(showWeek ? GONE : VISIBLE);
+            week.setVisibility(showWeek ? VISIBLE : GONE);
             sky.set(w.code, w.day);
             degrees.setText(w.temperature + "°");
             skyText.setText(w.sky());
-            String more = "Max " + w.high + "°   Min " + w.low + "°";
-            if (w.rain >= 0) more += "\nRegenrisiko " + w.rain + " %";
-            range.setText(more);
-            weatherCard.setVisibility(VISIBLE);
+            range.setText("↑ " + w.high + "°    ↓ " + w.low + "°");
+            rain.setText(w.rain >= 0 ? "Regen " + w.rain + " %" : "");
+            SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            SimpleDateFormat dayShort = new SimpleDateFormat("EE", Locale.GERMAN);
+            for (int i = 0; i < dayName.length; i++) {
+                android.view.View line = (android.view.View) dayName[i].getParent();
+                if (i >= w.dates.length) {
+                    line.setVisibility(INVISIBLE);
+                    continue;
+                }
+                line.setVisibility(VISIBLE);
+                String name;
+                try {
+                    name = dayShort.format(iso.parse(w.dates[i])).replace(".", "");
+                } catch (java.text.ParseException e) {
+                    name = "";
+                }
+                dayName[i].setText(name);
+                daySky[i].set(w.codes[i], true);
+                dayHigh[i].setText(w.highs[i] + "°");
+                dayLow[i].setText(w.lows[i] + "°");
+            }
+            weather.card.setVisibility(VISIBLE);
         }
 
         String[] times = feed.prayers(cfg);
         if (times == null) {
-            prayerCard.setVisibility(GONE);
+            prayer.card.setVisibility(GONE);
         } else {
             // The next prayer stands out; Shuruq (sunrise) is listed but is not one.
             String clock24 = new SimpleDateFormat("HH:mm", Locale.US).format(now);
@@ -233,77 +340,68 @@ final class SaverView extends FrameLayout {
                 if (i != 1 && times[i].compareTo(clock24) > 0) next = i;
             }
             for (int i = 0; i < times.length; i++) {
-                int color = i == next ? cfg.accent() : QUIET;
+                int color = i == next ? accent : QUIET;
                 prayerName[i].setTextColor(color);
                 prayerTime[i].setTextColor(color);
                 prayerTime[i].setText(times[i]);
             }
-            prayerCard.setVisibility(VISIBLE);
+            prayer.card.setVisibility(VISIBLE);
         }
 
         Soccer soccer = Soccer.get(c);
         soccer.refresh(cfg);
         List<Soccer.Page> pages = soccer.pages(cfg);
         if (pages.isEmpty()) {
-            gamesCard.setVisibility(GONE);
+            games.card.setVisibility(GONE);
             return;
         }
         // One page at a time, the next one every ten seconds: my clubs, then league by league.
         int at = (int) (now.getTime() / 10_000 % pages.size());
         Soccer.Page page = pages.get(at);
-        heading(gamesCard, page.title + (pages.size() > 1 ? "   " + (at + 1) + "/" + pages.size() : ""));
+        games.title.setText(page.title.toUpperCase(Locale.GERMAN));
+        games.note.setText(pages.size() > 1 ? (at + 1) + " / " + pages.size() : "");
         List<String> clubs = Soccer.clubs(cfg);
-        SpannableStringBuilder s = new SpannableStringBuilder();
-        for (Soccer.Match m : page.matches) line(s, m, clubs, cfg.accent(), now, page.withDay);
-        games.setText(s);
-        gamesCard.setVisibility(VISIBLE);
+        for (int i = 0; i < gameRows.length; i++) {
+            GameRow r = gameRows[i];
+            if (i >= page.matches.size()) {
+                r.row.setVisibility(GONE);
+                continue;
+            }
+            fill(r, page.matches.get(i), clubs, accent, now, page.withDay);
+            r.row.setVisibility(VISIBLE);
+        }
+        games.card.setVisibility(VISIBLE);
     }
 
     /**
-     * One match as a line: when or how it stands, then the two clubs. Favourite clubs are written
-     * in the accent color, a derby gets a mark. {@code withDay} names the day of a later match.
+     * One match into its row. Favourite clubs are written in the accent color; a running match
+     * shows its minute in red; a derby gets a faint amber band. {@code withDay} puts the weekday
+     * before a later kick-off.
      */
-    private static void line(SpannableStringBuilder s, Soccer.Match m, List<String> clubs, int accent,
-            Date now, boolean withDay) {
-        if (s.length() > 0) s.append("\n");
-        int from = s.length();
+    private void fill(GameRow r, Soccer.Match m, List<String> clubs, int accent, Date now, boolean withDay) {
         Date kick = new Date(m.kickoff);
         if (m.live()) {
-            s.append("● ").append(m.clock);
-            color(s, from, 0xFFFF5147);
+            r.when.setText("● " + m.clock);
+            r.when.setTextColor(0xFFFF5147);
         } else if (m.over()) {
-            s.append("Ende");
-            color(s, from, 0x80FFFFFF);
+            r.when.setText("Ende");
+            r.when.setTextColor(SOFT);
         } else {
             SimpleDateFormat stamp = new SimpleDateFormat("yyyyMMdd", Locale.US);
-            if (withDay) {
-                s.append(stamp.format(kick).equals(stamp.format(now)) ? "Heute"
-                        : new SimpleDateFormat("EE dd.MM.", Locale.GERMAN).format(kick)).append(" ");
-            }
-            s.append(new SimpleDateFormat("HH:mm", Locale.GERMAN).format(kick));
+            String time = new SimpleDateFormat("HH:mm", Locale.GERMAN).format(kick);
+            boolean today = stamp.format(kick).equals(stamp.format(now));
+            r.when.setText(withDay && !today
+                    ? new SimpleDateFormat("EE", Locale.GERMAN).format(kick).replace(".", "") + " " + time
+                    : time);
+            r.when.setTextColor(SOFT);
         }
-        s.append("   ");
-        from = s.length();
-        s.append(m.homeName);
-        if (clubs.contains(String.valueOf(m.home))) color(s, from, accent);
-        if (m.live() || m.over()) {
-            s.append("  ").append(String.valueOf(m.goalsHome)).append(":")
-                    .append(String.valueOf(m.goalsAway)).append("  ");
-        } else {
-            s.append(" – ");
-        }
-        from = s.length();
-        s.append(m.awayName);
-        if (clubs.contains(String.valueOf(m.away))) color(s, from, accent);
-        if (m.derby) {
-            from = s.length();
-            s.append("   DERBY");
-            color(s, from, 0xFFFFB340);
-        }
-    }
-
-    private static void color(SpannableStringBuilder s, int from, int color) {
-        s.setSpan(new ForegroundColorSpan(color), from, s.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        r.home.setText(m.homeName);
+        r.home.setTextColor(clubs.contains(String.valueOf(m.home)) ? accent : QUIET);
+        r.away.setText(m.awayName);
+        r.away.setTextColor(clubs.contains(String.valueOf(m.away)) ? accent : QUIET);
+        r.mid.setText(m.live() || m.over() ? m.goalsHome + ":" + m.goalsAway : "–");
+        r.mid.setTextColor(m.live() || m.over() ? Ui.TEXT : SOFT);
+        r.row.setBackground(m.derby ? Ui.round(0x26FFB340, Ui.dp(getContext(), 6)) : null);
     }
 
     void start() {
