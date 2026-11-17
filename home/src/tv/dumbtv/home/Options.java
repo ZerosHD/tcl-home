@@ -75,7 +75,7 @@ public final class Options extends Activity {
 
         LinearLayout home = section(list, "Home-Screen");
         for (Config.Choice c : new Config.Choice[] {Config.ORDER, Config.CLOCK, Config.MEMORY,
-                Config.INPUTS, Config.SWITCH}) {
+                Config.INPUTS, Config.SWITCH, Config.NAV_SOUND}) {
             home.addView(choice(c));
         }
         home.addView(action("Apps auf dem Home-Screen", () -> pick(Catalog.APPS)));
@@ -110,7 +110,25 @@ public final class Options extends Activity {
         list.addView(about, new LinearLayout.LayoutParams(dp(WIDTH), WRAP));
 
         setContentView(scroll);
+        Sounds.attach(getWindow().getDecorView());
         refresh();
+    }
+
+
+    /** OK plays the chosen sound; the TV's own click is switched off on these views (Sounds). */
+    private void okSound(KeyEvent e) {
+        if (e.getAction() != KeyEvent.ACTION_DOWN || e.getRepeatCount() != 0) return;
+        int code = e.getKeyCode();
+        if ((code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER
+                || code == KeyEvent.KEYCODE_NUMPAD_ENTER) && getCurrentFocus() != null) {
+            Sounds.get(this).select();
+        }
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent e) {
+        okSound(e);
+        return super.dispatchKeyEvent(e);
     }
 
     @Override

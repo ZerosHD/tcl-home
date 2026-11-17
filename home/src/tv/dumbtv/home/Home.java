@@ -202,6 +202,7 @@ public final class Home extends Activity {
                 : io.submit(() -> Recent.times(this));
         tv = (TvInputManager) getSystemService(Context.TV_INPUT_SERVICE);
         setContentView(build());
+        Sounds.attach(getWindow().getDecorView());
 
         IntentFilter f = new IntentFilter();
         f.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -346,8 +347,20 @@ public final class Home extends Activity {
 
 
 
+
+    /** OK plays the chosen sound; the TV's own click is switched off on these views (Sounds). */
+    private void okSound(KeyEvent e) {
+        if (e.getAction() != KeyEvent.ACTION_DOWN || e.getRepeatCount() != 0) return;
+        int code = e.getKeyCode();
+        if ((code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER
+                || code == KeyEvent.KEYCODE_NUMPAD_ENTER) && getCurrentFocus() != null) {
+            Sounds.get(this).select();
+        }
+    }
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
+        okSound(e);
         if (moving == null) return super.dispatchKeyEvent(e);
         if (e.getAction() == KeyEvent.ACTION_DOWN) {
             switch (e.getKeyCode()) {

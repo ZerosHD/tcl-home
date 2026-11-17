@@ -105,6 +105,8 @@ TCL-Systemdienste. Eine App, die du doch willst, kommentierst du in der Liste mi
 - Die markierte Kachel hebt sich an: sie wird größer, bekommt einen weichen Schatten, einen
   Lichtschein und eine helle Kante. *Optionen › Fokus-Stil* bietet außerdem *Leuchten* und
   *Nur Rahmen* in der Akzentfarbe (*Optionen › Akzentfarbe*, zehn Farben).
+- Beim Wechseln zwischen Kacheln und bei OK spielt TCL Home einen eigenen, leisen Ton statt
+  des TV-Klicks. *Optionen › Home-Screen › Navigationston*: *Glas*, *Holz*, *TV-Standard* oder *Aus*.
 - Die erste Reihe liegt auf einem Dock, einer halb durchsichtigen Leiste für deine
   wichtigsten Apps. *Optionen › Dock (erste Reihe)* schaltet es aus.
 - Keine Werbung, keine Vorschläge, kein Konto. Ins Internet geht die App nur für den

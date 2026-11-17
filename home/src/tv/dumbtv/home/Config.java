@@ -141,7 +141,11 @@ final class Config {
     static final Choice GALLERY = new Choice("gallery", "Neue Bilder laden", "daily",
             new String[] {"off", "daily", "weekly"},
             new String[] {"Aus", "Täglich 3 neue", "Wöchentlich 9 neue"});
-    static final Choice[] CHOICES = {ACCENT, FOCUS, DOCK, TILES, LAYOUT, ORDER, LABELS, CLOCK, MEMORY, INPUTS, SWITCH, BACKGROUND, DIM, ROTATE, BACK, SAVER, LOCK, TILE_STYLE, WEATHER, PRAYER, FOOTBALL, GALLERY};
+    /** What moving between tiles and pressing OK sound like in TCL Home; see Sounds. */
+    static final Choice NAV_SOUND = new Choice("navsound", "Navigationston", "glass",
+            new String[] {"glass", "wood", "tv", "off"},
+            new String[] {"Glas", "Holz", "TV-Standard", "Aus"});
+    static final Choice[] CHOICES = {ACCENT, FOCUS, DOCK, TILES, LAYOUT, ORDER, LABELS, CLOCK, MEMORY, INPUTS, SWITCH, BACKGROUND, DIM, ROTATE, BACK, SAVER, LOCK, TILE_STYLE, WEATHER, PRAYER, FOOTBALL, GALLERY, NAV_SOUND};
 
     /** Folder of wallpapers, next to home.conf, that Background › Image file rotates through. */
     static final String WALLPAPERS = "wallpapers";
