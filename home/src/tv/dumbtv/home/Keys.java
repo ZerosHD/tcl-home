@@ -43,7 +43,6 @@ final class Keys {
     /** True when the key was taken. Both the press and the release are taken, so nothing leaks. */
     static boolean handle(AccessibilityService s, KeyEvent e) {
         int code = e.getKeyCode();
-        if (echo(e)) return true;
         // Keys the TV handles itself are never touched: no lookup, no log, no delay.
         if (passThrough(code)) return false;
         if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) {
@@ -54,37 +53,6 @@ final class Keys {
         if (target == null) return false;
         if (e.getAction() == KeyEvent.ACTION_UP) run(s, target);
         return true;
-    }
-
-    /**
-     * This TCL remote sends every press of a volume key twice, about a tenth of a second apart,
-     * so one press moved the volume two steps. A second press of the same volume key that comes
-     * sooner than any hand could press it is swallowed, its release with it. Holding the key
-     * still works: the held key repeats with a repeat count, which is never swallowed.
-     */
-    private static final long ECHO_MS = 170;
-    private static int lastVolumeCode;
-    private static long lastVolumeDown;
-    private static boolean swallowing;
-
-    private static boolean echo(KeyEvent e) {
-        int code = e.getKeyCode();
-        if (code != KeyEvent.KEYCODE_VOLUME_UP && code != KeyEvent.KEYCODE_VOLUME_DOWN) return false;
-        if (e.getAction() == KeyEvent.ACTION_DOWN) {
-            if (e.getRepeatCount() > 0) return swallowing;
-            long at = e.getEventTime();
-            swallowing = code == lastVolumeCode && at - lastVolumeDown < ECHO_MS;
-            if (!swallowing) {
-                lastVolumeCode = code;
-                lastVolumeDown = at;
-            }
-            return swallowing;
-        }
-        if (e.getAction() == KeyEvent.ACTION_UP && swallowing) {
-            swallowing = false;
-            return true;
-        }
-        return false;
     }
 
     private static boolean passThrough(int code) {
