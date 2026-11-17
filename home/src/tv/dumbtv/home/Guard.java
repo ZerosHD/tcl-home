@@ -44,8 +44,6 @@ import android.view.accessibility.AccessibilityEvent;
  * such as its settings grid, are left alone, as is a wake before any window was seen.
  */
 public final class Guard extends AccessibilityService {
-    /** Takes back the second of the two steps the TV makes from one volume press. */
-    private VolumeStep volume;
     static final String AMAZON = "com.amazon.tv.launcher";
     private static final String AMAZON_HOME = "com.amazon.tv.launcher.ui.HomeActivity_vNext";
     private static final long COVER_MAX_MS = 1500;
@@ -132,7 +130,6 @@ public final class Guard extends AccessibilityService {
         ((WindowManager) getSystemService(WINDOW_SERVICE)).addView(view, lp);
         cover = view;
         registerReceiver(screenOn, new IntentFilter(Intent.ACTION_SCREEN_ON));
-        volume = VolumeStep.register(this);
     }
 
     @Override
@@ -143,14 +140,7 @@ public final class Guard extends AccessibilityService {
             unregisterReceiver(screenOn);
         } catch (IllegalArgumentException ignored) {
         }
-        if (volume != null) {
-            try {
-                unregisterReceiver(volume);
-            } catch (IllegalArgumentException ignored) {
-            }
-            volume.stop();
-            volume = null;
-        }
+
         if (cover != null) ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(cover);
         if (running == this) running = null;
         super.onDestroy();

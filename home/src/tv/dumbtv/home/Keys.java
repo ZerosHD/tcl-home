@@ -3,6 +3,7 @@ package tv.dumbtv.home;
 import android.accessibilityservice.AccessibilityService;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.media.AudioManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.provider.Settings;
@@ -43,6 +44,7 @@ final class Keys {
     /** True when the key was taken. Both the press and the release are taken, so nothing leaks. */
     static boolean handle(AccessibilityService s, KeyEvent e) {
         int code = e.getKeyCode();
+        if (volume(s, e)) return true;
         // Keys the TV handles itself are never touched: no lookup, no log, no delay.
         if (passThrough(code)) return false;
         if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) {
@@ -52,6 +54,27 @@ final class Keys {
         String target = map.get(code);
         if (target == null) return false;
         if (e.getAction() == KeyEvent.ACTION_UP) run(s, target);
+        return true;
+    }
+
+    /**
+     * Volume up and down are taken here and the volume moved one step. Let through, this TCL
+     * handles every key that passed an accessibility key filter twice, so one press moved the
+     * volume two steps (shown in its log: handleKeyBeforeDispatching twice per press; with this
+     * service off, one press was one step). Holding the key repeats, one step per repeat.
+     */
+    private static boolean volume(AccessibilityService s, KeyEvent e) {
+        int code = e.getKeyCode();
+        if (code != KeyEvent.KEYCODE_VOLUME_UP && code != KeyEvent.KEYCODE_VOLUME_DOWN) return false;
+        if (e.getAction() == KeyEvent.ACTION_DOWN) {
+            AudioManager audio = (AudioManager) s.getSystemService(Context.AUDIO_SERVICE);
+            if (audio != null) {
+                // the flags the TV itself uses for a key: show the volume bar, from a key (0x1000)
+                audio.adjustSuggestedStreamVolume(code == KeyEvent.KEYCODE_VOLUME_UP
+                                ? AudioManager.ADJUST_RAISE : AudioManager.ADJUST_LOWER,
+                        AudioManager.USE_DEFAULT_STREAM_TYPE, AudioManager.FLAG_SHOW_UI | 0x1000);
+            }
+        }
         return true;
     }
 
